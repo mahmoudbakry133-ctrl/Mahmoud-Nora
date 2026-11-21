@@ -1,0 +1,2889 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="بيتنا - الميزانية" />
+  <title>بيتنا — تطبيق ميزانية الأسرة (محمود ونورا)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Cairo', 'system-ui', '-apple-system', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+      background: #e2e8f0;
+      color: #0f172a;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    html.dark body { background: #020617; color: #f1f5f9; }
+    .app-shell {
+      max-width: 480px;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: #f8fafc;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.16);
+      padding-bottom: 92px;
+    }
+    html.dark .app-shell { background: #0f172a; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    @media (max-width: 480px) {
+      body { background: #f8fafc; }
+      html.dark body { background: #0f172a; }
+      .app-shell { max-width: 100%; box-shadow: none; }
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid #e2e8f0;
+      z-index: 40;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    html.dark .bottom-nav { background: rgba(15, 23, 42, 0.96); border-top-color: #1e293b; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 60;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-sheet {
+      width: 100%;
+      max-width: 480px;
+      max-height: 92vh;
+      background: #ffffff;
+      border-top-left-radius: 26px;
+      border-top-right-radius: 26px;
+      overflow-y: auto;
+      animation: slideUp 0.22s ease-out;
+    }
+    html.dark .modal-sheet { background: #1e293b; color: #f1f5f9; }
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0.7; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast {
+      position: fixed;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 90;
+      max-width: 92%;
+      animation: fadeDown 0.2s ease-out;
+    }
+    @keyframes fadeDown {
+      from { transform: translate(-50%, -12px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake { animation: shake 0.35s ease-in-out; }
+    .login-screen {
+      max-width: 480px;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: linear-gradient(160deg, #0f766e 0%, #115e59 42%, #0f172a 100%);
+      color: #ffffff;
+      position: relative;
+      z-index: 55;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 20px 24px;
+    }
+    .pin-key {
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .pin-key:active { transform: scale(0.94); background: rgba(255,255,255,0.28); }
+  </style>
+</head>
+<body>
+  <!-- ======================================================================= -->
+  <!-- DEDICATED PIN LOGIN SCREEN (محمود: 2006 | نورا: 2109)                    -->
+  <!-- ======================================================================= -->
+  <div id="loginScreen" class="login-screen hidden">
+    <div class="text-center pt-2">
+      <div class="w-16 h-16 rounded-2xl bg-white/15 border border-white/25 mx-auto flex items-center justify-center text-3xl shadow-lg">🏠</div>
+      <h1 class="text-2xl font-black mt-3 tracking-tight">ميزانية بيتنا</h1>
+      <p class="text-xs text-teal-100/90 mt-1">اختر حسابك وأدخل الرقم السري للمتابعة</p>
+    </div>
+
+    <div class="my-4 space-y-4">
+      <!-- Account Cards -->
+      <div class="grid grid-cols-2 gap-3" id="loginUserCards">
+        <button type="button" data-login-uid="mahmoud" class="login-user-card p-3.5 rounded-2xl border-2 border-sky-400 bg-white/15 backdrop-blur text-center transition">
+          <div id="loginAvatarM" class="w-12 h-12 rounded-full bg-sky-500 text-white text-xl font-black mx-auto flex items-center justify-center shadow">م</div>
+          <div id="loginNameM" class="mt-2 text-sm font-extrabold">محمود</div>
+          <div class="text-[11px] text-teal-100">حساب الزوج</div>
+        </button>
+        <button type="button" data-login-uid="nora" class="login-user-card p-3.5 rounded-2xl border-2 border-white/15 bg-white/5 backdrop-blur text-center transition">
+          <div id="loginAvatarN" class="w-12 h-12 rounded-full bg-pink-500 text-white text-xl font-black mx-auto flex items-center justify-center shadow">ن</div>
+          <div id="loginNameN" class="mt-2 text-sm font-extrabold">نورا</div>
+          <div class="text-[11px] text-teal-100">حساب الزوجة</div>
+        </button>
+      </div>
+
+      <!-- PIN Dots -->
+      <div class="text-center">
+        <div id="loginPinHint" class="text-xs font-bold text-teal-100 mb-2.5">أدخل الرقم السري لحساب محمود (4 أرقام)</div>
+        <div id="loginPinDots" class="flex items-center justify-center gap-3.5">
+          <span class="pin-dot w-4 h-4 rounded-full border-2 border-white/60 transition-all"></span>
+          <span class="pin-dot w-4 h-4 rounded-full border-2 border-white/60 transition-all"></span>
+          <span class="pin-dot w-4 h-4 rounded-full border-2 border-white/60 transition-all"></span>
+          <span class="pin-dot w-4 h-4 rounded-full border-2 border-white/60 transition-all"></span>
+        </div>
+        <div id="loginErrorMsg" class="text-xs font-bold text-rose-300 mt-2 h-4"></div>
+      </div>
+
+      <!-- Banking-Style Keypad -->
+      <div class="grid grid-cols-3 gap-2.5 max-w-[290px] mx-auto" dir="ltr">
+        <button type="button" data-key="1" class="pin-key">1</button>
+        <button type="button" data-key="2" class="pin-key">2</button>
+        <button type="button" data-key="3" class="pin-key">3</button>
+        <button type="button" data-key="4" class="pin-key">4</button>
+        <button type="button" data-key="5" class="pin-key">5</button>
+        <button type="button" data-key="6" class="pin-key">6</button>
+        <button type="button" data-key="7" class="pin-key">7</button>
+        <button type="button" data-key="8" class="pin-key">8</button>
+        <button type="button" data-key="9" class="pin-key">9</button>
+        <button type="button" id="pinKeyClear" class="pin-key text-xs font-bold text-teal-200">مسح</button>
+        <button type="button" data-key="0" class="pin-key">0</button>
+        <button type="button" id="pinKeyBack" class="pin-key" aria-label="حذف رقم"><i data-lucide="delete" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+
+    <div class="space-y-2.5">
+      <label class="flex items-center justify-center gap-2 text-xs text-teal-100 font-semibold cursor-pointer">
+        <input id="rememberLoginCheck" type="checkbox" checked class="w-4 h-4 accent-teal-400 rounded" />
+        <span>تذكر دخولي على هذا الهاتف تلقائياً</span>
+      </label>
+      <div class="text-center text-[10px] text-teal-200/70">بياناتكما محمية ومتزامنة لحظياً بين الجهازين</div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MAIN APP SHELL                                                          -->
+  <!-- ======================================================================= -->
+  <div class="app-shell hidden" id="appRoot">
+    <!-- Top App Header -->
+    <header class="sticky top-0 z-30 bg-gradient-to-l from-brand-700 to-brand-800 text-white px-4 pt-3 pb-3 shadow-md">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-lg shrink-0">🏠</div>
+          <div class="min-w-0">
+            <h1 class="text-base font-extrabold leading-tight truncate">ميزانية بيتنا</h1>
+            <div class="flex items-center gap-1.5 text-[11px] text-teal-100">
+              <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-300 inline-block"></span>
+              <span id="syncStatusText" class="truncate">محفوظ محلياً</span>
+            </div>
+          </div>
+        </div>
+        <!-- Active User Switcher + Lock Button -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="btnSwitchUser" type="button" class="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 transition px-2.5 py-1.5 rounded-full border border-white/25">
+            <span id="activeUserAvatar" class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-sky-500 text-white">م</span>
+            <span id="activeUserName" class="text-xs font-bold">محمود</span>
+            <i data-lucide="arrow-left-right" class="w-3.5 h-3.5 opacity-80"></i>
+          </button>
+          <button id="btnLockApp" type="button" title="قفل وتسجيل خروج" class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition flex items-center justify-center border border-white/20">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Month Selector Strip -->
+      <div class="mt-2.5 flex items-center justify-between gap-2">
+        <div id="monthPills" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1"></div>
+        <button id="btnAddMonth" type="button" class="shrink-0 text-xs font-bold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-lg border border-white/20 flex items-center gap-1">
+          <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
+          <span>شهر</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic View Container -->
+    <main id="mainContent" class="px-3.5 pt-3.5 pb-6 space-y-3.5"></main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <div class="grid grid-cols-5 items-center px-1 py-1.5 relative">
+        <button type="button" data-tab="dashboard" class="nav-btn flex flex-col items-center justify-center py-1 text-brand-700 font-bold">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          <span class="text-[11px] mt-0.5">الرئيسية</span>
+        </button>
+        <button type="button" data-tab="budget" class="nav-btn flex flex-col items-center justify-center py-1 text-slate-400">
+          <i data-lucide="pie-chart" class="w-5 h-5"></i>
+          <span class="text-[11px] mt-0.5">التقسيم</span>
+        </button>
+        <!-- Center FAB -->
+        <div class="flex justify-center -mt-7">
+          <button id="btnOpenAddExpense" type="button" aria-label="تسجيل مصروف جديد" class="w-14 h-14 rounded-full bg-gradient-to-tr from-brand-700 to-teal-500 text-white shadow-lg shadow-teal-700/35 flex items-center justify-center active:scale-95 transition border-4 border-white dark:border-slate-900">
+            <i data-lucide="plus" class="w-7 h-7 stroke-[2.5]"></i>
+          </button>
+        </div>
+        <button type="button" data-tab="expenses" class="nav-btn flex flex-col items-center justify-center py-1 text-slate-400">
+          <i data-lucide="receipt" class="w-5 h-5"></i>
+          <span class="text-[11px] mt-0.5">المصروفات</span>
+        </button>
+        <button type="button" data-tab="settings" class="nav-btn flex flex-col items-center justify-center py-1 text-slate-400">
+          <i data-lucide="smartphone" class="w-5 h-5"></i>
+          <span class="text-[11px] mt-0.5">المزامنة</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="modalContainer" class="hidden"></div>
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <script>
+    // =========================================================================
+    // 1. COMPREHENSIVE EGYPTIAN HOUSEHOLD CATALOG (Notes.zip + Seoudi Market + Daily Life)
+    // =========================================================================
+    const CATALOG = [
+      {
+        id: 'poultry_meat',
+        name: 'دواجن ولحوم وأسماك',
+        icon: '🍗',
+        color: '#dc2626',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'دواجن وطيور', items: ['بانيه', 'وراك فراخ وسط', 'دبابيس فراخ', 'فراخ كاملة / وطنية', 'كبدة فراخ', 'كبد وقوانص', 'صدور فراخ', 'بط', 'أرانب', 'حمام', 'شيش طاووق', 'أخرى'] },
+          { name: 'لحوم وكبدة', items: ['لحمة بلدي', 'لحمة مفرومة جملي', 'لحمة مفرومة بلدي', 'لحمة سوداني', 'لحمة متبلة', 'لحمة حواوشي', 'كبدة شرائح', 'كبدة عصافير', 'سجق بلدي', 'كفتة رز', 'ممبار', 'موزة / كباب حلة', 'أخرى'] },
+          { name: 'مصنعات لحوم', items: ['برجر حلواني', 'برجر دايم', 'سوسيس / هوت دوج كوكي', 'استربس مزايا', 'ناجتس', 'لانشون', 'بسطرمة', 'أخرى'] },
+          { name: 'أسماك ومأكولات بحرية', items: ['سمك ماكريل', 'فيليه سمك', 'سمك بلطي', 'سمك مشوي جاهز', 'سمك بوري', 'جمبري', 'تونة معلبة', 'رنجة / فسيخ', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'produce',
+        name: 'خضار وفواكه ومجمدات',
+        icon: '🥬',
+        color: '#16a34a',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'خضار طازج', items: ['طماطم', 'بطاطس', 'بصل', 'فلفل رومي', 'فلفل حامي', 'خيار', 'جزر', 'ثوم مفروم / صحيح', 'باذنجان', 'بامية', 'بسلة بالجزر', 'فاصوليا خضراء', 'قرنبيط', 'قلقاس', 'ملوخية', 'كوسة', 'ليمون', 'خضرة (شبت وبقدونس وكزبرة)', 'خس وجرجير', 'كرنب / ورق عنب', 'أخرى'] },
+          { name: 'فواكه', items: ['موز', 'عنب', 'تفاح', 'برتقال', 'يوسفي', 'فراولة', 'مانجو', 'جوافة', 'بطيخ', 'كنتالوب', 'رمان', 'بلح', 'خوخ / برقوق', 'أخرى'] },
+          { name: 'مجمدات ومخبوزات مجمدة', items: ['بسلة وجزر مجمد', 'ملوخية مجمدة', 'بامية مجمدة', 'بطاطس نصف مقلية', 'لفة جلاش', 'رقاق', 'سمبوسك', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'dairy_breakfast',
+        name: 'ألبان وبيض وأجبان وفطار',
+        icon: '🥛',
+        color: '#0284c7',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'ألبان وبيض', items: ['لبن سايب / طازج', 'لبن بخيره / معلب', 'كرتونة بيض', 'زبادي', 'رايب', 'قشطة', 'أخرى'] },
+          { name: 'أجبان', items: ['جبنة قريش', 'جبنة ثلاجة', 'جبنة خلطة', 'جبنة رودس', 'جبنة كيري / بالسوسيس', 'جبنة رومي', 'جبنة شيدر', 'جبنة موتزاريلا الحمد', 'جبنة ميكس', 'جبنة فيتا', 'جبنة نستو', 'أخرى'] },
+          { name: 'فطار وحلويات ومخبوزات', items: ['حلاوة طحينية', 'عسل أبيض', 'عسل أسود', 'طحينة', 'مربى فراولة', 'شوكولاتة قابلة للدهن', 'عيش بلدي', 'فينو', 'فايش', 'كحك وبسكوت', 'توست / كرواسون', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'pantry_spices',
+        name: 'بقالة وخزين وتوابل',
+        icon: '🛒',
+        color: '#d97706',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'أرز ومكرونة وبقوليات', items: ['أرز مصري (الساعة)', 'أرز بسمتي', 'مكرونة قلم (حواء)', 'مكرونة خواتم', 'مكرونة صغيرة', 'مكرونة معوجة', 'مكرونة طويلة / اسباجتي', 'شعرية', 'لسان عصفور', 'إندومي', 'عدس أصفر', 'عدس بجبة', 'لوبيا', 'فاصوليا بيضاء', 'فول تدميس', 'فريك / حمص', 'أخرى'] },
+          { name: 'دقيق وسكر وزيوت وصلصات', items: ['دقيق (بيكي بيكر / الأورانج)', 'بقسماط مطحون', 'نشا', 'سكر', 'زيت طبخ / قلي', 'سمنة كريستال', 'زبدة', 'برطمان صلصة', 'خل', 'مرقة دجاج (كنور / بودر)', 'بيكنج بودر', 'فانيليا', 'خميرة فورية', 'كاتشب / مايونيز', 'أخرى'] },
+          { name: 'عطارة وتوابل', items: ['فلفل أسود', 'كمون', 'كزبرة ناشفة', 'حبهان', 'كاري', 'بابريكا', 'شطة', 'ثوم وبصل بودر', 'توابل كبسة', 'قرفة عيدان', 'ليمون ناشف (لومي)', 'صفار زعفران', 'ملح', 'شبة', 'أخرى'] },
+          { name: 'مشروبات وسناكس', items: ['نسكافيه بلاك / جولد', 'شاي', 'قهوة', 'كاكاو / هوت شوكليت', 'عصير', 'مياه معدنية', 'مشروبات غازية', 'شيبسي وبسكوت للأولاد', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'cleaning',
+        name: 'منظفات ومستلزمات البيت',
+        icon: '🧼',
+        color: '#0891b2',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'غسيل ومواعين', items: ['مسحوق غسيل (الباهي)', 'برسيل جل للملابس السوداء', 'صابون مواعين', 'سلك مواعين', 'إسبونش مواعين', 'كلور أبيض / ألوان', 'منعم ملابس', 'أخرى'] },
+          { name: 'تنظيف ومعطرات', items: ['ماجيك منظف', 'فلاش حمامات', 'ديتول / مطهر', 'معطر فريدة', 'أكياس زبالة', 'جوانتي مواعين', 'جوانتي بلاستيك شفاف', 'مشابك غسيل', 'مناديل ورقية', 'ورق مطبخ', 'فويل واسترتش', 'لمبات وأدوات كهربائية', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'personal_baby',
+        name: 'عناية شخصية وأطفال',
+        icon: '🧴',
+        color: '#db2777',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'حفاضات ومستلزمات أطفال', items: ['مولفيكس مقاس 5', 'فاين بيبي مقاس 5', 'وايبس أطفال', 'فازلين بيور', 'كريم تسلخات', 'شامبو أطفال', 'أخرى'] },
+          { name: 'عناية شخصية', items: ['شامبو بانتين', 'كريم شعر فاتيكا', 'صابونة جلسرين إيفا', 'صابون سائل لليد فريدة', 'مرطب شان', 'هيبتا بانثينول', 'مرطب لونا', 'شفرات جيليت', 'برفيوم', 'مزيل عرق', 'معجون وفرشاة أسنان', 'فوط صحية', 'حلاقة / كوافير', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'sandwiches_food',
+        name: 'سندوتشات وأكل جاهز',
+        icon: '🥪',
+        color: '#ea580c',
+        defaultBudgetName: 'أكل محمود في العمل',
+        subcategories: [
+          { name: 'سندوتشات شعبية', items: ['سندوتش فول', 'سندوتش طعمية', 'سندوتش بطاطس', 'بطاطس سوري', 'سندوتش جبنة مقلية', 'سندوتش مسقعة', 'سندوتش بابا غنوج', 'سندوتش بيض', 'فطار عمر', 'أكل محمود في العمل', 'أخرى'] },
+          { name: 'سندوتشات لحوم وسريع', items: ['سندوتش كبدة إسكندراني', 'سندوتش سجق', 'شاورما فراخ', 'شاورما لحمة', 'حواوشي جاهز', 'برجر جاهز', 'كفتة', 'أخرى'] },
+          { name: 'وجبات ومطاعم وحلويات', items: ['كشري', 'بيتزا', 'كريب', 'فراخ مشوية / بروستد', 'فطير مشلتت', 'حلويات شرقية', 'عصير قصب / كوكتيل', 'قهوة / شاي بره', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'transport',
+        name: 'مواصلات ومشاوير',
+        icon: '🚕',
+        color: '#4f46e5',
+        defaultBudgetName: 'مواصلات محمود',
+        subcategories: [
+          { name: 'مواصلات يومية', items: ['توكتوك', 'ميكروباص', 'عربية / أوبر / إندرايف / ديدي', 'تاكسي', 'مترو', 'أتوبيس', 'موتوسيكل', 'أخرى'] },
+          { name: 'اشتراكات ومواصلات الأسرة', items: ['مواصلات محمود للشغل', 'مواصلات النادي (نورا)', 'باص عمر', 'بنزين', 'صيانة / كاوتش / زيت', 'ركنة / جراج', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'outings_sports',
+        name: 'خروجات وترفيه ونادي',
+        icon: '🎉',
+        color: '#9333ea',
+        defaultBudgetName: 'مصاريف سباحة',
+        subcategories: [
+          { name: 'خروجات وفسح', items: ['كافيه', 'مطعم عائلي', 'ملاهي وألعاب أطفال', 'نادي', 'سينما', 'كورنيش / حديقة', 'آيس كريم', 'تسالي (لب وسوداني وذرة)', 'رحلة / مصيف', 'أخرى'] },
+          { name: 'رياضة واشتراكات', items: ['سباحة', 'مصاريف سباحة', 'جيم', 'كورة', 'لبس رياضي / أدوات تمرين', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'pharmacy_health',
+        name: 'صيدلية وأدوية وفيتامينات',
+        icon: '💊',
+        color: '#059669',
+        defaultBudgetName: 'طوارئ / كشف / أدوية',
+        subcategories: [
+          { name: 'فيتامينات ومكملات', items: ['فيدروب', 'حديد (هيدروفين / فيروديب)', 'ألفاكالسيدول', 'فيتامينات أولاد', 'فيتامينات محمود (ويل مان)', 'فيتامينات نورا (ويل ومان)', 'أخرى'] },
+          { name: 'أدوية وكشف طبي', items: ['أكلارتين (حساسية)', 'دولبران (مسكن / حلق)', 'محلول ملح', 'مضاد حيوي / خافض حرارة', 'كشف دكتور', 'تحاليل وأشعة', 'ليزر وأدوية نورهان', 'أسنان', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'bills_home',
+        name: 'فواتير والتزامات البيت',
+        icon: '⚡',
+        color: '#ca8a04',
+        defaultBudgetName: 'كهرباء',
+        subcategories: [
+          { name: 'مرافق وفواتير', items: ['كهرباء', 'غاز', 'مياه', 'إنترنت أرضي', 'شحن موبايل نورهان', 'شحن موبايل محمود', 'مسح سلم وقمامة', 'إيجار / صيانة عمارة', 'أخرى'] },
+          { name: 'التزامات وصيانة', items: ['جمعية', 'سداد دين', 'قسط شهري', 'سباك / كهربائي / نجار', 'صيانة أجهزة منزلية', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'kids_edu',
+        name: 'أولاد وتعليم وقرآن',
+        icon: '🎒',
+        color: '#2563eb',
+        defaultBudgetName: 'دروس عمر',
+        subcategories: [
+          { name: 'تعليم وحضانة', items: ['دروس عمر', 'حضانة الابن الأصغر', 'قرآن (نور)', 'قرآن (محمود)', 'مصاريف مدرسة', 'كتب ومذكرات', 'أدوات مكتبية وقرطاسية', 'مصروف المدرسة', 'أخرى'] },
+          { name: 'ألعاب واحتياجات الأولاد', items: ['ألعاب أطفال', 'ملابس أولاد', 'أحذية مدارس / تمرين', 'حفلة / عيد ميلاد', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'clothes_gifts',
+        name: 'ملابس وهدايا ومناسبات',
+        icon: '👕',
+        color: '#e11d48',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'ملابس وأحذية', items: ['ملابس محمود', 'ملابس نورا', 'ملابس أطفال', 'أحذية وشنط', 'إكسسوارات', 'أخرى'] },
+          { name: 'هدايا ومجاملات وصدقة', items: ['هدية مناسبة', 'نقوط / مجاملة', 'صدقة / زكاة', 'عيدية', 'أخرى'] }
+        ]
+      },
+      {
+        id: 'other',
+        name: 'أخرى (كتابة يدوية)',
+        icon: '📝',
+        color: '#475569',
+        defaultBudgetName: 'مصروف البيت والخزين',
+        subcategories: [
+          { name: 'مصروف مخصص', items: ['أخرى'] }
+        ]
+      }
+    ];
+
+    const QUICK_FAVORITES = [
+      { label: '🛺 توكتوك', catId: 'transport', subName: 'مواصلات يومية', itemName: 'توكتوك' },
+      { label: '🚐 ميكروباص', catId: 'transport', subName: 'مواصلات يومية', itemName: 'ميكروباص' },
+      { label: '🥙 سندوتش فول', catId: 'sandwiches_food', subName: 'سندوتشات شعبية', itemName: 'سندوتش فول' },
+      { label: '🧆 طعمية', catId: 'sandwiches_food', subName: 'سندوتشات شعبية', itemName: 'سندوتش طعمية' },
+      { label: '🥪 فطار عمر', catId: 'sandwiches_food', subName: 'سندوتشات شعبية', itemName: 'فطار عمر' },
+      { label: '🍗 بانيه', catId: 'poultry_meat', subName: 'دواجن وطيور', itemName: 'بانيه' },
+      { label: '🥚 كرتونة بيض', catId: 'dairy_breakfast', subName: 'ألبان وبيض', itemName: 'كرتونة بيض' },
+      { label: '🥛 لبن', catId: 'dairy_breakfast', subName: 'ألبان وبيض', itemName: 'لبن سايب / طازج' }
+    ];
+
+    const FLAT_CATALOG = [];
+    CATALOG.forEach(cat => {
+      cat.subcategories.forEach(sub => {
+        sub.items.forEach(item => {
+          if (item !== 'أخرى') {
+            FLAT_CATALOG.push({
+              catId: cat.id,
+              catName: cat.name,
+              catIcon: cat.icon,
+              subName: sub.name,
+              itemName: item,
+              defaultBudgetName: cat.defaultBudgetName
+            });
+          }
+        });
+      });
+    });
+
+    // =========================================================================
+    // 2. DEFAULT TEMPLATE DATA FROM UPLOADED EXCEL
+    // =========================================================================
+    function createDefaultBudgetItems() {
+      const fixed = [
+        { name: 'مواصلات محمود', planned: 1210, octActual: 1210, catId: 'transport' },
+        { name: 'أكل محمود في العمل', planned: 550, octActual: 690, catId: 'sandwiches_food' },
+        { name: 'كهرباء', planned: 600, octActual: 500, catId: 'bills_home' },
+        { name: 'إنترنت', planned: 450, octActual: 450, catId: 'bills_home' },
+        { name: 'شحن نورهان', planned: 70, octActual: 100, catId: 'bills_home' },
+        { name: 'ليزر وأدوية نورهان', planned: 500, octActual: 0, catId: 'pharmacy_health' },
+        { name: 'دروس عمر', planned: 1300, octActual: 600, catId: 'kids_edu' },
+        { name: 'غاز', planned: 150, octActual: 100, catId: 'bills_home' },
+        { name: 'مياه', planned: 100, octActual: 0, catId: 'bills_home' },
+        { name: 'مسح سلم وقمامة', planned: 100, octActual: 100, catId: 'bills_home' },
+        { name: 'جمعية', planned: 2000, octActual: 2000, catId: 'bills_home' }
+      ];
+      const variable = [
+        { name: 'مصروف البيت والخزين', planned: 4500, octActual: 4500, catId: 'pantry_spices' },
+        { name: 'قرآن (نور)', planned: 200, octActual: 200, catId: 'kids_edu' },
+        { name: 'قرآن (محمود)', planned: 200, octActual: 200, catId: 'kids_edu' },
+        { name: 'مواصلات النادي (نورا)', planned: 500, octActual: 270, catId: 'transport' },
+        { name: 'باص عمر', planned: 500, octActual: 550, catId: 'transport' },
+        { name: 'فطار عمر', planned: 500, octActual: 400, catId: 'sandwiches_food' },
+        { name: 'سباحة', planned: 250, octActual: 250, catId: 'outings_sports' },
+        { name: 'طوارئ / كشف / أدوية', planned: 700, octActual: 0, catId: 'pharmacy_health' },
+        { name: 'فيتامينات أولاد', planned: 200, octActual: 200, catId: 'pharmacy_health' },
+        { name: 'فيتامينات محمود', planned: 210, octActual: 210, catId: 'pharmacy_health' },
+        { name: 'جيم', planned: 350, octActual: 350, catId: 'outings_sports' },
+        { name: 'كورة', planned: 120, octActual: 120, catId: 'outings_sports' },
+        { name: 'مصاريف سباحة', planned: 0, octActual: 300, catId: 'outings_sports' },
+        { name: 'حضانة الابن الأصغر', planned: 1000, octActual: 0, catId: 'kids_edu' }
+      ];
+      const budgets = [];
+      let idx = 1;
+      fixed.forEach(b => budgets.push({ id: 'b_f_' + idx++, name: b.name, type: 'fixed', planned: b.planned, catId: b.catId }));
+      variable.forEach(b => budgets.push({ id: 'b_v_' + idx++, name: b.name, type: 'variable', planned: b.planned, catId: b.catId }));
+      return { budgets, fixed, variable };
+    }
+
+    function buildInitialState() {
+      const novData = createDefaultBudgetItems();
+      const octData = createDefaultBudgetItems();
+
+      const octExpenses = [];
+      const octAll = [...octData.fixed, ...octData.variable];
+      octAll.forEach((b, i) => {
+        if (b.octActual > 0) {
+          const matchedBudget = octData.budgets.find(x => x.name === b.name);
+          const isNora = b.name.includes('نور') || b.name.includes('البيت') || b.name.includes('فطار') || b.name.includes('دروس');
+          octExpenses.push({
+            id: 'exp_oct_' + (i + 1),
+            date: '2026-10-' + String(Math.min(28, 2 + i)).padStart(2, '0'),
+            time: '14:30',
+            amount: b.octActual,
+            catId: b.catId,
+            subName: 'من شيت أكتوبر 2026',
+            itemName: b.name,
+            budgetId: matchedBudget ? matchedBudget.id : '',
+            note: 'مسجل من شيت الميزانية الفعلي',
+            userId: isNora ? 'nora' : 'mahmoud',
+            createdAt: '2026-10-28T12:00:00Z'
+          });
+        }
+      });
+
+      return {
+        version: 2,
+        activeUserId: 'mahmoud',
+        activeMonthKey: '2026-11',
+        darkMode: false,
+        users: {
+          mahmoud: { id: 'mahmoud', name: 'محمود', role: 'الزوج', avatar: 'م', color: '#0284c7', bg: '#e0f2fe', pin: '2006' },
+          nora: { id: 'nora', name: 'نورا', role: 'الزوجة', avatar: 'ن', color: '#db2777', bg: '#fce7f3', pin: '2109' }
+        },
+        sync: {
+          firebaseUrl: 'https://bakry-5fb50-default-rtdb.firebaseio.com',
+          lastSyncAt: ''
+        },
+        debt: {
+          total: 6000,
+          paid: 0,
+          payments: []
+        },
+        coupleNote: {
+          text: '',
+          userId: 'nora',
+          updatedAt: ''
+        },
+        shoppingList: [],
+        deletedIds: [],
+        months: {
+          '2026-11': {
+            key: '2026-11',
+            label: 'نوفمبر 2026',
+            incomes: [
+              { id: 'inc_n1', name: 'الدخل الشهري (محمود)', amount: 13000, userId: 'mahmoud', createdAt: '2026-11-01T08:00:00Z' },
+              { id: 'inc_n2', name: 'دخل نورا', amount: 2000, userId: 'nora', createdAt: '2026-11-01T08:05:00Z' },
+              { id: 'inc_n3', name: 'أم محمود', amount: 1500, userId: 'mahmoud', createdAt: '2026-11-01T08:10:00Z' }
+            ],
+            budgets: novData.budgets,
+            expenses: []
+          },
+          '2026-10': {
+            key: '2026-10',
+            label: 'أكتوبر 2026',
+            incomes: [
+              { id: 'inc_o1', name: 'الدخل الشهري (محمود)', amount: 12000, userId: 'mahmoud', createdAt: '2026-10-01T08:00:00Z' },
+              { id: 'inc_o2', name: 'دخل نورا', amount: 2000, userId: 'nora', createdAt: '2026-10-01T08:05:00Z' }
+            ],
+            budgets: octData.budgets,
+            expenses: octExpenses
+          }
+        },
+        activityLog: [
+          { id: 'act_1', text: 'تم تجهيز ميزانية نوفمبر 2026 وأكتوبر 2026 من شيت الميزانية', userId: 'mahmoud', time: 'اليوم' }
+        ]
+      };
+    }
+
+    // =========================================================================
+    // 3. STATE MANAGEMENT, AUTH SESSION & PERSISTENCE
+    // =========================================================================
+    const STORAGE_KEY = 'baytna_family_budget_v1';
+    const AUTH_KEY = 'baytna_auth_session_v2';
+    let state = loadState();
+    let isAuthenticated = false;
+    let activeTab = 'dashboard';
+    let expenseFilter = { user: 'all', catId: 'all', budgetId: 'all', search: '' };
+    let budgetTypeFilter = 'all';
+    let chartInstances = {};
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.months && parsed.users) {
+            // Upgrade old saves with new defaults (PINs 2006 / 2109, Firebase URL, shoppingList, coupleNote, deletedIds)
+            if (!parsed.sync) parsed.sync = { firebaseUrl: 'https://bakry-5fb50-default-rtdb.firebaseio.com', lastSyncAt: '' };
+            else if (!parsed.sync.firebaseUrl) parsed.sync.firebaseUrl = 'https://bakry-5fb50-default-rtdb.firebaseio.com';
+            if (parsed.users.mahmoud && !parsed.users.mahmoud.pin) parsed.users.mahmoud.pin = '2006';
+            if (parsed.users.nora && !parsed.users.nora.pin) parsed.users.nora.pin = '2109';
+            if (!Array.isArray(parsed.shoppingList)) parsed.shoppingList = [];
+            if (!Array.isArray(parsed.deletedIds)) parsed.deletedIds = [];
+            if (!parsed.coupleNote) parsed.coupleNote = { text: '', userId: 'nora', updatedAt: '' };
+            if (typeof parsed.darkMode !== 'boolean') parsed.darkMode = false;
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return buildInitialState();
+    }
+
+    function saveState(skipCloud = false) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {}
+      if (!skipCloud && state.sync && state.sync.firebaseUrl) {
+        pushToFirebase();
+      }
+    }
+
+    function applyTheme() {
+      document.documentElement.classList.toggle('dark', !!state.darkMode);
+    }
+
+    function getCurrentMonth() {
+      return state.months[state.activeMonthKey] || Object.values(state.months)[0];
+    }
+
+    function getActiveUser() {
+      return state.users[state.activeUserId] || state.users.mahmoud;
+    }
+
+    function logActivity(text) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      state.activityLog.unshift({
+        id: 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        text,
+        userId: state.activeUserId,
+        time: timeStr
+      });
+      if (state.activityLog.length > 50) state.activityLog.length = 50;
+    }
+
+    function fmt(num) {
+      const n = Number(num) || 0;
+      return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getCatById(id) {
+      return CATALOG.find(c => c.id === id) || CATALOG[CATALOG.length - 1];
+    }
+
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toastContainer');
+      const bg = type === 'error' ? 'bg-rose-600' : type === 'warn' ? 'bg-amber-600' : 'bg-slate-900';
+      const el = document.createElement('div');
+      el.className = `toast ${bg} text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-center`;
+      el.textContent = msg;
+      c.innerHTML = '';
+      c.appendChild(el);
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { c.innerHTML = ''; }, 3000);
+    }
+
+    // =========================================================================
+    // 3B. DEDICATED PIN LOGIN FLOW
+    // =========================================================================
+    let loginSelectedUid = state.activeUserId || 'mahmoud';
+    let loginPinBuffer = '';
+
+    function showLoginScreen(prefUid = null) {
+      isAuthenticated = false;
+      loginSelectedUid = prefUid || state.activeUserId || 'mahmoud';
+      loginPinBuffer = '';
+      document.getElementById('appRoot').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginNameM').textContent = state.users.mahmoud.name;
+      document.getElementById('loginAvatarM').textContent = state.users.mahmoud.avatar;
+      document.getElementById('loginNameN').textContent = state.users.nora.name;
+      document.getElementById('loginAvatarN').textContent = state.users.nora.avatar;
+      updateLoginUi();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateLoginUi() {
+      document.querySelectorAll('.login-user-card').forEach(btn => {
+        const uid = btn.dataset.loginUid;
+        const active = uid === loginSelectedUid;
+        btn.classList.toggle('bg-white/20', active);
+        btn.classList.toggle('bg-white/5', !active);
+        btn.classList.toggle('border-sky-300', active && uid === 'mahmoud');
+        btn.classList.toggle('border-pink-300', active && uid === 'nora');
+        btn.classList.toggle('border-white/15', !active);
+        btn.classList.toggle('scale-[1.02]', active);
+      });
+      const targetName = state.users[loginSelectedUid].name;
+      document.getElementById('loginPinHint').textContent = `أدخل الرقم السري لحساب ${targetName} (4 أرقام)`;
+      const dots = document.querySelectorAll('#loginPinDots .pin-dot');
+      dots.forEach((d, idx) => {
+        const filled = idx < loginPinBuffer.length;
+        d.classList.toggle('bg-white', filled);
+        d.classList.toggle('scale-110', filled);
+        d.classList.toggle('border-white', filled);
+      });
+    }
+
+    function handleLoginDigit(digit) {
+      if (loginPinBuffer.length >= 4) return;
+      document.getElementById('loginErrorMsg').textContent = '';
+      loginPinBuffer += digit;
+      updateLoginUi();
+      if (loginPinBuffer.length === 4) {
+        const target = state.users[loginSelectedUid];
+        const expectedPin = target.pin || (loginSelectedUid === 'mahmoud' ? '2006' : '2109');
+        if (loginPinBuffer === expectedPin) {
+          state.activeUserId = loginSelectedUid;
+          isAuthenticated = true;
+          const remember = document.getElementById('rememberLoginCheck').checked;
+          try {
+            if (remember) localStorage.setItem(AUTH_KEY, JSON.stringify({ uid: loginSelectedUid, ts: Date.now() }));
+            else localStorage.removeItem(AUTH_KEY);
+          } catch (e) {}
+          saveState(true);
+          document.getElementById('loginScreen').classList.add('hidden');
+          document.getElementById('appRoot').classList.remove('hidden');
+          renderAll();
+          showToast(`أهلاً بك يا ${target.name} 🏠`);
+          if (state.sync && state.sync.firebaseUrl) {
+            pullFromFirebase(false);
+            startCloudAutoSync();
+          }
+        } else {
+          const dotsWrap = document.getElementById('loginPinDots');
+          dotsWrap.classList.remove('animate-shake');
+          void dotsWrap.offsetWidth;
+          dotsWrap.classList.add('animate-shake');
+          document.getElementById('loginErrorMsg').textContent = 'الرقم السري غير صحيح — حاول مرة أخرى';
+          setTimeout(() => {
+            loginPinBuffer = '';
+            updateLoginUi();
+          }, 420);
+        }
+      }
+    }
+
+    function lockAndLogout() {
+      try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+      if (window._cloudSyncInterval) clearInterval(window._cloudSyncInterval);
+      showLoginScreen(state.activeUserId);
+    }
+
+    // =========================================================================
+    // 4. CLOUD SYNC (FIREBASE REALTIME DB) & WHATSAPP MERGE SYNC
+    // =========================================================================
+    function normalizeFirebaseUrl(raw) {
+      let u = (raw || '').trim();
+      if (!u) return '';
+      if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+      u = u.replace(/\/baytna_budget\.json$/i, '').replace(/\/+$/, '');
+      return u;
+    }
+
+    function describeFirebaseError(err) {
+      const msg = String(err && err.message ? err.message : err || '');
+      if (msg.includes('401') || msg.includes('403')) {
+        return {
+          short: 'مقفول من Firebase Rules (401)',
+          detail: 'افتح Firebase ← Realtime Database ← Rules وغيّر read و write إلى true ثم اضغط Publish'
+        };
+      }
+      if (msg.includes('404')) {
+        return {
+          short: 'الرابط غير موجود (404)',
+          detail: 'تأكد من إنشاء Realtime Database ونسخ الرابط الصحيح من Firebase'
+        };
+      }
+      return {
+        short: 'تعذر الاتصال (تأكد من الإنترنت/Rules)',
+        detail: 'تعذر الاتصال بـ Firebase حالياً — تأكد من الإنترنت وافتح الملف من المتصفح المباشر على الموبايل'
+      };
+    }
+
+    async function pushToFirebase() {
+      const url = normalizeFirebaseUrl(state.sync.firebaseUrl);
+      if (!url || !url.startsWith('https://')) return;
+      try {
+        updateSyncIndicator('syncing', 'جاري الحفظ السحابي...');
+        const payload = { ...state };
+        delete payload.activeUserId;
+        delete payload.darkMode;
+        const res = await fetch(url + '/baytna_budget.json', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        state.sync.lastSyncAt = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        updateSyncIndicator('ok', 'متزامن سحابياً ' + state.sync.lastSyncAt);
+      } catch (e) {
+        const info = describeFirebaseError(e);
+        updateSyncIndicator('err', info.short);
+      }
+    }
+
+    async function pullFromFirebase(showMsg = false) {
+      const url = normalizeFirebaseUrl(state.sync.firebaseUrl);
+      if (!url || !url.startsWith('https://')) return;
+      try {
+        updateSyncIndicator('syncing', 'جاري تحديث البيانات...');
+        const res = await fetch(url + '/baytna_budget.json');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const remote = await res.json();
+        if (remote && remote.months) {
+          const myUserId = state.activeUserId;
+          const myUrl = url;
+          const myDark = state.darkMode;
+          mergeRemoteState(remote);
+          state.activeUserId = myUserId;
+          state.sync.firebaseUrl = myUrl;
+          state.darkMode = myDark;
+          state.sync.lastSyncAt = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+          saveState(true);
+          if (isAuthenticated) renderAll();
+          updateSyncIndicator('ok', 'متزامن سحابياً ' + state.sync.lastSyncAt);
+          if (showMsg) showToast('تم التحديث والمزامنة السحابية بنجاح');
+        } else {
+          await pushToFirebase();
+          if (showMsg) showToast('تم رفع بياناتك إلى Firebase لأول مرة بنجاح');
+        }
+      } catch (e) {
+        const info = describeFirebaseError(e);
+        updateSyncIndicator('err', info.short);
+        if (showMsg) showToast(info.detail, 'error');
+      }
+    }
+
+    function startCloudAutoSync() {
+      if (window._cloudSyncInterval) clearInterval(window._cloudSyncInterval);
+      if (state.sync && normalizeFirebaseUrl(state.sync.firebaseUrl)) {
+        window._cloudSyncInterval = setInterval(() => {
+          if (!document.hidden && isAuthenticated) pullFromFirebase(false);
+        }, 15000);
+      }
+    }
+
+    function mergeRemoteState(remote) {
+      if (!remote || !remote.months) return;
+      // Union deletedIds so deleted items stay deleted
+      const delSet = new Set([...(state.deletedIds || []), ...(remote.deletedIds || [])]);
+      state.deletedIds = Array.from(delSet).slice(-300);
+
+      Object.keys(remote.months).forEach(mKey => {
+        if (!state.months[mKey]) {
+          state.months[mKey] = remote.months[mKey];
+        } else {
+          const loc = state.months[mKey];
+          const rem = remote.months[mKey];
+          const incMap = new Map();
+          (loc.incomes || []).forEach(x => { if (!delSet.has(x.id)) incMap.set(x.id, x); });
+          (rem.incomes || []).forEach(x => { if (!delSet.has(x.id)) incMap.set(x.id, x); });
+          loc.incomes = Array.from(incMap.values());
+
+          const budMap = new Map();
+          (loc.budgets || []).forEach(x => { if (!delSet.has(x.id)) budMap.set(x.id, x); });
+          (rem.budgets || []).forEach(x => { if (!delSet.has(x.id)) budMap.set(x.id, x); });
+          loc.budgets = Array.from(budMap.values());
+
+          const expMap = new Map();
+          (loc.expenses || []).forEach(x => { if (!delSet.has(x.id)) expMap.set(x.id, x); });
+          (rem.expenses || []).forEach(x => { if (!delSet.has(x.id)) expMap.set(x.id, x); });
+          loc.expenses = Array.from(expMap.values()).sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+        }
+      });
+
+      // Merge shopping list
+      const shopMap = new Map();
+      (state.shoppingList || []).forEach(x => { if (!delSet.has(x.id)) shopMap.set(x.id, x); });
+      (remote.shoppingList || []).forEach(x => { if (!delSet.has(x.id)) shopMap.set(x.id, x); });
+      state.shoppingList = Array.from(shopMap.values());
+
+      if (remote.coupleNote && remote.coupleNote.updatedAt && (!state.coupleNote || (remote.coupleNote.updatedAt > (state.coupleNote.updatedAt || '')))) {
+        state.coupleNote = remote.coupleNote;
+      }
+      if (remote.debt) state.debt = remote.debt;
+      if (remote.activityLog) {
+        const actMap = new Map();
+        [...(remote.activityLog || []), ...(state.activityLog || [])].forEach(a => actMap.set(a.id, a));
+        state.activityLog = Array.from(actMap.values()).slice(0, 50);
+      }
+    }
+
+    function updateSyncIndicator(status, text) {
+      const dot = document.getElementById('syncStatusDot');
+      const txt = document.getElementById('syncStatusText');
+      if (!dot || !txt) return;
+      txt.textContent = text;
+      dot.className = 'w-2 h-2 rounded-full inline-block ' + (
+        status === 'ok' ? 'bg-emerald-300' :
+        status === 'syncing' ? 'bg-amber-300 animate-pulse' :
+        status === 'err' ? 'bg-rose-400' : 'bg-teal-200'
+      );
+    }
+
+    // =========================================================================
+    // 5. COMPUTATIONS & SMART INSIGHTS
+    // =========================================================================
+    function calcMonthSummary(month) {
+      const totalIncome = (month.incomes || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      const totalPlanned = (month.budgets || []).reduce((s, b) => s + (Number(b.planned) || 0), 0);
+      const unallocated = totalIncome - totalPlanned;
+
+      const expenses = month.expenses || [];
+      const totalSpent = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const remaining = totalIncome - totalSpent;
+
+      const byUser = { mahmoud: { total: 0, count: 0 }, nora: { total: 0, count: 0 } };
+      const byBudget = {};
+      const byCat = {};
+
+      expenses.forEach(e => {
+        const amt = Number(e.amount) || 0;
+        const uid = e.userId === 'nora' ? 'nora' : 'mahmoud';
+        byUser[uid].total += amt;
+        byUser[uid].count += 1;
+        if (e.budgetId) byBudget[e.budgetId] = (byBudget[e.budgetId] || 0) + amt;
+        byCat[e.catId] = (byCat[e.catId] || 0) + amt;
+      });
+
+      const fixedPlanned = (month.budgets || []).filter(b => b.type === 'fixed').reduce((s, b) => s + (Number(b.planned) || 0), 0);
+      const varPlanned = (month.budgets || []).filter(b => b.type === 'variable').reduce((s, b) => s + (Number(b.planned) || 0), 0);
+
+      // Daily safe spend calculation
+      const [yStr, mStr] = (month.key || '2026-11').split('-');
+      const daysInMonth = new Date(Number(yStr), Number(mStr), 0).getDate() || 30;
+      const now = new Date();
+      const isSameMonth = now.getFullYear() === Number(yStr) && (now.getMonth() + 1) === Number(mStr);
+      const daysLeft = isSameMonth ? Math.max(1, daysInMonth - now.getDate() + 1) : daysInMonth;
+      const dailySafe = remaining > 0 ? Math.floor(remaining / daysLeft) : 0;
+
+      // Smart budget alerts (>= 80% or exceeded)
+      const alerts = [];
+      (month.budgets || []).forEach(b => {
+        const spent = byBudget[b.id] || 0;
+        const planned = Number(b.planned) || 0;
+        if (planned > 0 && spent >= planned * 0.8) {
+          alerts.push({ name: b.name, spent, planned, pct: Math.round((spent / planned) * 100), over: spent > planned });
+        }
+      });
+
+      return { totalIncome, totalPlanned, unallocated, totalSpent, remaining, byUser, byBudget, byCat, fixedPlanned, varPlanned, daysLeft, dailySafe, alerts };
+    }
+
+    // =========================================================================
+    // 6. RENDERING HEADER & NAVIGATION
+    // =========================================================================
+    function renderHeader() {
+      const u = getActiveUser();
+      const avatar = document.getElementById('activeUserAvatar');
+      avatar.textContent = u.avatar;
+      avatar.style.backgroundColor = u.color;
+      document.getElementById('activeUserName').textContent = u.name;
+
+      const pills = document.getElementById('monthPills');
+      const keys = Object.keys(state.months).sort().reverse();
+      pills.innerHTML = keys.map(k => {
+        const m = state.months[k];
+        const active = k === state.activeMonthKey;
+        return `<button type="button" data-month-key="${escapeHtml(k)}" class="month-pill shrink-0 px-3 py-1 rounded-full text-xs font-bold transition ${active ? 'bg-white text-brand-800 shadow-sm' : 'bg-white/15 text-teal-50 hover:bg-white/25'}">${escapeHtml(m.label)}</button>`;
+      }).join('');
+
+      pills.querySelectorAll('.month-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeMonthKey = btn.dataset.monthKey;
+          expenseFilter.budgetId = 'all';
+          saveState(true);
+          renderAll();
+        });
+      });
+
+      if (state.sync && state.sync.firebaseUrl) {
+        updateSyncIndicator('ok', state.sync.lastSyncAt ? ('متزامن ' + state.sync.lastSyncAt) : 'سحابة مفعّلة');
+      } else {
+        updateSyncIndicator('local', 'محفوظ على الجهاز');
+      }
+    }
+
+    function updateNavActive() {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === activeTab;
+        btn.classList.toggle('text-brand-700', isActive);
+        btn.classList.toggle('dark:text-teal-400', isActive);
+        btn.classList.toggle('font-bold', isActive);
+        btn.classList.toggle('text-slate-400', !isActive);
+      });
+    }
+
+    function destroyCharts() {
+      Object.values(chartInstances).forEach(ch => { try { ch.destroy(); } catch (e) {} });
+      chartInstances = {};
+    }
+
+    function renderAll() {
+      applyTheme();
+      destroyCharts();
+      renderHeader();
+      updateNavActive();
+      const main = document.getElementById('mainContent');
+      if (activeTab === 'dashboard') renderDashboard(main);
+      else if (activeTab === 'budget') renderBudgetTab(main);
+      else if (activeTab === 'expenses') renderExpensesTab(main);
+      else if (activeTab === 'settings') renderSettingsTab(main);
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // =========================================================================
+    // 7. TAB 1: DASHBOARD (الرئيسية المطورة)
+    // =========================================================================
+    function renderDashboard(container) {
+      const month = getCurrentMonth();
+      const sum = calcMonthSummary(month);
+      const spendPct = sum.totalIncome > 0 ? Math.min(100, Math.round((sum.totalSpent / sum.totalIncome) * 100)) : 0;
+      const mPct = sum.totalSpent > 0 ? Math.round((sum.byUser.mahmoud.total / sum.totalSpent) * 100) : 50;
+      const nPct = sum.totalSpent > 0 ? (100 - mPct) : 50;
+      const remDebt = Math.max(0, (Number(state.debt.total) || 0) - (Number(state.debt.paid) || 0));
+      const pendingShopCount = (state.shoppingList || []).filter(x => !x.done).length;
+      const recentExpenses = [...(month.expenses || [])].slice(0, 6);
+      const allMonthKeys = Object.keys(state.months).sort().reverse();
+
+      container.innerHTML = `
+        <!-- Hero Wallet Card -->
+        <section class="bg-gradient-to-br from-brand-700 via-brand-800 to-slate-900 rounded-2xl p-4 text-white shadow-lg">
+          <div class="flex items-center justify-between text-xs text-teal-100">
+            <span>المتبقي من دخل ${escapeHtml(month.label)}</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${sum.remaining >= 0 ? 'bg-emerald-400/20 text-emerald-200' : 'bg-rose-500/30 text-rose-200'}">
+              ${sum.remaining >= 0 ? 'فائض آمن' : 'عجز'}
+            </span>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between gap-2">
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-3xl font-black tracking-tight">${fmt(sum.remaining)}</span>
+              <span class="text-sm text-teal-200 font-semibold">جنيه</span>
+            </div>
+            <div class="text-left bg-white/10 px-2.5 py-1 rounded-xl border border-white/15">
+              <div class="text-[10px] text-teal-200">المتاح يومياً (${sum.daysLeft} يوم)</div>
+              <div class="text-xs font-extrabold text-emerald-200">${fmt(sum.dailySafe)} ج/يوم</div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="flex justify-between text-[11px] text-teal-100 mb-1">
+              <span>نسبة المصروف من الدخل</span>
+              <span class="font-bold">${spendPct}%</span>
+            </div>
+            <div class="h-2 bg-white/15 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500 ${spendPct >= 95 ? 'bg-rose-400' : spendPct >= 75 ? 'bg-amber-300' : 'bg-emerald-300'}" style="width:${spendPct}%"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 mt-3.5 pt-3 border-t border-white/15 text-center">
+            <div>
+              <div class="text-[11px] text-teal-200">إجمالي الدخل</div>
+              <div class="text-sm font-extrabold">${fmt(sum.totalIncome)}</div>
+            </div>
+            <div class="border-x border-white/15">
+              <div class="text-[11px] text-teal-200">المصروف الفعلي</div>
+              <div class="text-sm font-extrabold text-amber-200">${fmt(sum.totalSpent)}</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-teal-200">المخطط للأقسام</div>
+              <div class="text-sm font-extrabold text-teal-100">${fmt(sum.totalPlanned)}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Smart Budget Alerts (Only when a category >= 80%) -->
+        ${sum.alerts.length > 0 ? `
+          <section class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 space-y-1.5">
+            <div class="text-xs font-extrabold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+              <span>تنبيهات الميزانية الذكية</span>
+            </div>
+            ${sum.alerts.slice(0, 3).map(al => `
+              <div class="text-[11px] flex items-center justify-between ${al.over ? 'text-rose-700 dark:text-rose-300 font-bold' : 'text-amber-900 dark:text-amber-200'}">
+                <span>• ${escapeHtml(al.name)}</span>
+                <span>${fmt(al.spent)} / ${fmt(al.planned)} ج (${al.pct}%)</span>
+              </div>
+            `).join('')}
+          </section>
+        ` : ''}
+
+        <!-- Quick Actions Strip (4 Pro Actions incl. Shopping List) -->
+        <section class="grid grid-cols-4 gap-2">
+          <button type="button" id="qaAddExp" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 flex flex-col items-center gap-1 hover:border-brand-500 active:scale-95 transition">
+            <span class="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/50 text-brand-700 dark:text-teal-300 flex items-center justify-center"><i data-lucide="plus-circle" class="w-4 h-4"></i></span>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200">مصروف</span>
+          </button>
+          <button type="button" id="qaShoppingList" class="relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 flex flex-col items-center gap-1 hover:border-brand-500 active:scale-95 transition">
+            ${pendingShopCount > 0 ? `<span class="absolute -top-1.5 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center">${pendingShopCount}</span>` : ''}
+            <span class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center"><i data-lucide="shopping-basket" class="w-4 h-4"></i></span>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200">طلبات البيت</span>
+          </button>
+          <button type="button" id="qaGoBudget" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 flex flex-col items-center gap-1 hover:border-brand-500 active:scale-95 transition">
+            <span class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></span>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200">التقسيم</span>
+          </button>
+          <button type="button" id="qaPayDebt" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 flex flex-col items-center gap-1 hover:border-brand-500 active:scale-95 transition">
+            <span class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 flex items-center justify-center"><i data-lucide="hand-coins" class="w-4 h-4"></i></span>
+            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200">الدين</span>
+          </button>
+        </section>
+
+        <!-- Couple's Shared Pinned Note -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between gap-2.5">
+          <div class="flex items-start gap-2 min-w-0 flex-1">
+            <span class="text-base mt-0.5">💌</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-bold text-slate-400">رسالة / تذكير سريع بينكما</div>
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+                ${state.coupleNote && state.coupleNote.text ? `${escapeHtml(state.users[state.coupleNote.userId]?.name || '')}: "${escapeHtml(state.coupleNote.text)}"` : 'اضغط لكتابة تذكير سريع للطرف الآخر (مثل: هات لبن وبيض)...'}
+              </div>
+            </div>
+          </div>
+          <button type="button" id="btnEditCoupleNote" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200">كتابة</button>
+        </section>
+
+        <!-- Mahmoud vs Nora Split Card -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5">
+            <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <i data-lucide="users" class="w-4 h-4 text-brand-600"></i>
+              <span>مين صرف كام؟ (النتيجة الموحدة)</span>
+            </h2>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">${(month.expenses || []).length} حركة</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="rounded-xl p-2.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-full bg-sky-600 text-white text-xs font-extrabold flex items-center justify-center">${escapeHtml(state.users.mahmoud.avatar)}</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-200">${escapeHtml(state.users.mahmoud.name)}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400">${sum.byUser.mahmoud.count} مصروف</div>
+                </div>
+              </div>
+              <div class="mt-2 text-base font-extrabold text-sky-700 dark:text-sky-300">${fmt(sum.byUser.mahmoud.total)} <span class="text-[11px] font-semibold">ج</span></div>
+            </div>
+            <div class="rounded-xl p-2.5 bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-900">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-full bg-pink-600 text-white text-xs font-extrabold flex items-center justify-center">${escapeHtml(state.users.nora.avatar)}</span>
+                <div>
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-200">${escapeHtml(state.users.nora.name)}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400">${sum.byUser.nora.count} مصروف</div>
+                </div>
+              </div>
+              <div class="mt-2 text-base font-extrabold text-pink-700 dark:text-pink-300">${fmt(sum.byUser.nora.total)} <span class="text-[11px] font-semibold">ج</span></div>
+            </div>
+          </div>
+          <div class="mt-2.5 flex h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700">
+            <div class="bg-sky-500 transition-all" style="width:${mPct}%"></div>
+            <div class="bg-pink-500 transition-all" style="width:${nPct}%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-semibold">
+            <span>${escapeHtml(state.users.mahmoud.name)}: ${mPct}%</span>
+            <span>${escapeHtml(state.users.nora.name)}: ${nPct}%</span>
+          </div>
+        </section>
+
+        <!-- Debt Tracker Card -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between gap-3">
+          <div>
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400">متابعة الدين (من شيت الميزانية)</div>
+            <div class="text-lg font-extrabold text-slate-800 dark:text-slate-100 mt-0.5">${fmt(remDebt)} <span class="text-xs font-semibold text-slate-500">ج متبقي من ${fmt(state.debt.total)}</span></div>
+            <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">تم سداد: ${fmt(state.debt.paid)} ج</div>
+          </div>
+          <button type="button" id="btnDebtModal" class="shrink-0 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-xs font-bold text-slate-700 dark:text-slate-200">إدارة الدين</button>
+        </section>
+
+        <!-- Visual Chart 1: Doughnut -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">${sum.totalSpent > 0 ? 'توزيع المصروفات الفعلية' : 'توزيع خطة الميزانية المخططة'}</h2>
+            <span class="text-[11px] text-slate-400 font-semibold">${escapeHtml(month.label)}</span>
+          </div>
+          <div class="relative h-56">
+            <canvas id="dashboardChart"></canvas>
+          </div>
+        </section>
+
+        <!-- Visual Chart 2: Planned vs Actual Bar Chart -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">مقارنة المخطط بالفعلي (أكبر البنود)</h2>
+            <span class="text-[11px] text-slate-400 font-semibold">جنيه</span>
+          </div>
+          <div class="relative h-56">
+            <canvas id="plannedVsActualChart"></canvas>
+          </div>
+        </section>
+
+        <!-- Month-over-Month Summary Table (شيت الملخص) -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 mb-2">ملخص الشهور</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-right">
+              <thead>
+                <tr class="text-[11px] text-slate-400 border-b border-slate-100 dark:border-slate-700">
+                  <th class="pb-1.5 font-bold">الشهر</th>
+                  <th class="pb-1.5 font-bold">الدخل</th>
+                  <th class="pb-1.5 font-bold">المصروف</th>
+                  <th class="pb-1.5 font-bold">المتبقي</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                ${allMonthKeys.map(k => {
+                  const m = state.months[k];
+                  const ms = calcMonthSummary(m);
+                  return `
+                    <tr>
+                      <td class="py-2 font-extrabold text-slate-700 dark:text-slate-200">${escapeHtml(m.label)}</td>
+                      <td class="py-2 text-slate-600 dark:text-slate-300">${fmt(ms.totalIncome)}</td>
+                      <td class="py-2 text-amber-600 dark:text-amber-400 font-bold">${fmt(ms.totalSpent)}</td>
+                      <td class="py-2 font-extrabold ${ms.remaining >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}">${fmt(ms.remaining)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Recent Activity / Expenses -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5">
+            <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">أحدث المصروفات المسجلة</h2>
+            <button type="button" id="btnViewAllExpenses" class="text-xs font-bold text-brand-700 dark:text-teal-400">عرض الكل</button>
+          </div>
+          ${recentExpenses.length === 0 ? `
+            <div class="text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+              <div class="text-2xl mb-1">📝</div>
+              <div class="text-xs font-bold text-slate-600 dark:text-slate-300">لسه مفيش مصروفات متسجلة في ${escapeHtml(month.label)}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">دوس على زر (+) تحت لتسجيل أول مصروف، أو اختار "أكتوبر 2026" فوق لمشاهدة بيانات الشيت</div>
+            </div>
+          ` : `
+            <div class="divide-y divide-slate-100 dark:divide-slate-700">
+              ${recentExpenses.map(e => renderExpenseRowCompact(e, month)).join('')}
+            </div>
+          `}
+        </section>
+
+        <!-- Recent Shared Activity Log -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 mb-2">سجل آخر التعديلات بينكما</h2>
+          <div class="space-y-2">
+            ${(state.activityLog || []).slice(0, 6).map(a => {
+              const usr = state.users[a.userId] || state.users.mahmoud;
+              return `
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="w-5 h-5 rounded-full text-[10px] font-bold text-white flex items-center justify-center shrink-0 mt-0.5" style="background:${usr.color}">${escapeHtml(usr.avatar)}</span>
+                  <div class="flex-1 text-slate-700 dark:text-slate-300 leading-snug"><span class="font-bold">${escapeHtml(usr.name)}:</span> ${escapeHtml(a.text)}</div>
+                  <span class="text-[10px] text-slate-400 shrink-0">${escapeHtml(a.time)}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+
+      document.getElementById('qaAddExp').addEventListener('click', () => openExpenseModal());
+      document.getElementById('qaShoppingList').addEventListener('click', openShoppingListModal);
+      document.getElementById('qaGoBudget').addEventListener('click', () => { activeTab = 'budget'; renderAll(); });
+      document.getElementById('qaPayDebt').addEventListener('click', openDebtModal);
+      document.getElementById('btnDebtModal').addEventListener('click', openDebtModal);
+      document.getElementById('btnEditCoupleNote').addEventListener('click', openCoupleNoteModal);
+      document.getElementById('btnViewAllExpenses').addEventListener('click', () => { activeTab = 'expenses'; renderAll(); });
+
+      const textColor = state.darkMode ? '#cbd5e1' : '#334155';
+
+      // Chart 1: Doughnut
+      const ctx = document.getElementById('dashboardChart');
+      if (ctx && window.Chart) {
+        let labels = [], values = [], colors = [];
+        if (sum.totalSpent > 0) {
+          const entries = Object.entries(sum.byCat).sort((a, b) => b[1] - a[1]);
+          entries.forEach(([catId, val]) => {
+            const c = getCatById(catId);
+            labels.push(c.icon + ' ' + c.name);
+            values.push(val);
+            colors.push(c.color);
+          });
+        } else {
+          const topBudgets = [...(month.budgets || [])].filter(b => b.planned > 0).sort((a, b) => b.planned - a.planned).slice(0, 7);
+          const palette = ['#0d9488', '#0284c7', '#d97706', '#db2777', '#7c3aed', '#16a34a', '#475569'];
+          topBudgets.forEach((b, i) => {
+            labels.push(b.name);
+            values.push(b.planned);
+            colors.push(palette[i % palette.length]);
+          });
+        }
+        chartInstances.dash = new Chart(ctx, {
+          type: 'doughnut',
+          data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: state.darkMode ? '#1e293b' : '#ffffff' }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+              legend: { position: 'bottom', rtl: true, labels: { color: textColor, font: { family: 'Cairo', size: 11 }, boxWidth: 10, padding: 10 } }
+            }
+          }
+        });
+      }
+
+      // Chart 2: Planned vs Actual Bar Chart
+      const ctx2 = document.getElementById('plannedVsActualChart');
+      if (ctx2 && window.Chart) {
+        const top6 = [...(month.budgets || [])].sort((a, b) => (b.planned || 0) - (a.planned || 0)).slice(0, 6);
+        chartInstances.bar = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: top6.map(b => b.name.length > 14 ? b.name.slice(0, 14) + '…' : b.name),
+            datasets: [
+              { label: 'المخطط', data: top6.map(b => Number(b.planned) || 0), backgroundColor: '#94a3b8', borderRadius: 6 },
+              { label: 'الفعلي', data: top6.map(b => sum.byBudget[b.id] || 0), backgroundColor: '#0d9488', borderRadius: 6 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', rtl: true, labels: { color: textColor, font: { family: 'Cairo', size: 11 }, boxWidth: 10 } } },
+            scales: {
+              x: { ticks: { color: textColor, font: { family: 'Cairo', size: 10 } }, grid: { display: false } },
+              y: { ticks: { color: textColor, font: { family: 'Cairo', size: 10 } }, grid: { color: state.darkMode ? '#334155' : '#f1f5f9' } }
+            }
+          }
+        });
+      }
+    }
+
+    function renderExpenseRowCompact(e, month) {
+      const cat = getCatById(e.catId);
+      const usr = state.users[e.userId] || state.users.mahmoud;
+      const bud = (month.budgets || []).find(b => b.id === e.budgetId);
+      return `
+        <div class="py-2.5 flex items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg shrink-0">${cat.icon}</div>
+            <div class="min-w-0">
+              <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100 truncate">${escapeHtml(e.itemName)}</div>
+              <div class="flex items-center flex-wrap gap-1 mt-0.5">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style="background:${usr.bg};color:${usr.color}">${escapeHtml(usr.name)}</span>
+                <span class="text-[10px] text-slate-400">${escapeHtml(e.date)}</span>
+                ${bud ? `<span class="text-[10px] text-brand-700 dark:text-teal-300 bg-brand-50 dark:bg-brand-900/40 px-1.5 py-0.5 rounded-md truncate max-w-[120px]">${escapeHtml(bud.name)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="text-left shrink-0">
+            <div class="text-sm font-extrabold text-slate-900 dark:text-white">${fmt(e.amount)} <span class="text-[10px] text-slate-400">ج</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 8. TAB 2: DYNAMIC INCOME & BUDGET ALLOCATION (تقسيم الميزانية أول الشهر)
+    // =========================================================================
+    function renderBudgetTab(container) {
+      const month = getCurrentMonth();
+      const sum = calcMonthSummary(month);
+      const filteredBudgets = (month.budgets || []).filter(b => budgetTypeFilter === 'all' || b.type === budgetTypeFilter);
+
+      container.innerHTML = `
+        <!-- Dynamic Allocation Bar -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold">المتاح للتقسيم من إجمالي الدخل</div>
+              <div class="text-2xl font-extrabold mt-0.5 ${sum.unallocated >= 0 ? 'text-brand-700 dark:text-teal-400' : 'text-rose-600'}">
+                ${fmt(sum.unallocated)} <span class="text-xs font-bold">جنيه</span>
+              </div>
+            </div>
+            <div class="text-left text-xs space-y-0.5">
+              <div class="text-slate-500 dark:text-slate-400">الدخل: <strong class="text-slate-800 dark:text-white">${fmt(sum.totalIncome)} ج</strong></div>
+              <div class="text-slate-500 dark:text-slate-400">المقسّم: <strong class="text-brand-700 dark:text-teal-400">${fmt(sum.totalPlanned)} ج</strong></div>
+            </div>
+          </div>
+          ${sum.unallocated < 0 ? `
+            <div class="mt-2 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900">
+              تنبيه: مجموع الأقسام المخططة أكبر من إجمالي الدخل بمقدار ${fmt(Math.abs(sum.unallocated))} جنيه.
+            </div>
+          ` : ''}
+        </section>
+
+        <!-- Income Sources Section -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5">
+            <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <i data-lucide="banknote" class="w-4 h-4 text-emerald-600"></i>
+              <span>مصادر الدخل (${escapeHtml(month.label)})</span>
+            </h2>
+            <button type="button" id="btnAddIncome" class="text-xs font-bold bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 px-2.5 py-1 rounded-lg flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>إضافة دخل</span>
+            </button>
+          </div>
+          <div class="space-y-2">
+            ${(month.incomes || []).map(inc => {
+              const usr = state.users[inc.userId] || state.users.mahmoud;
+              const canEdit = inc.userId === state.activeUserId;
+              return `
+                <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700">
+                  <div class="min-w-0">
+                    <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100 truncate">${escapeHtml(inc.name)}</div>
+                    <div class="text-[10px] mt-0.5 font-bold" style="color:${usr.color}">أضافه ${escapeHtml(usr.name)}</div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-sm font-extrabold text-emerald-700 dark:text-emerald-400">${fmt(inc.amount)} ج</span>
+                    <button type="button" data-edit-inc="${escapeHtml(inc.id)}" class="p-1.5 rounded-lg ${canEdit ? 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 hover:text-brand-700 border border-slate-200 dark:border-slate-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'}" title="${canEdit ? 'تعديل' : 'خاص بالطرف الآخر'}">
+                      <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+
+        <!-- Budget Envelopes Section -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex items-center justify-between gap-2 mb-2.5">
+            <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">أقسام وبنود الميزانية</h2>
+            <button type="button" id="btnAddBudget" class="text-xs font-bold bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-teal-300 hover:bg-brand-100 px-2.5 py-1 rounded-lg flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>بند جديد</span>
+            </button>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="grid grid-cols-3 gap-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl mb-3">
+            <button type="button" data-bfilter="all" class="bfilter-btn py-1.5 rounded-lg text-xs font-bold ${budgetTypeFilter === 'all' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-teal-300 shadow-sm' : 'text-slate-500'}">الكل (${(month.budgets || []).length})</button>
+            <button type="button" data-bfilter="fixed" class="bfilter-btn py-1.5 rounded-lg text-xs font-bold ${budgetTypeFilter === 'fixed' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-teal-300 shadow-sm' : 'text-slate-500'}">ثابتة (${fmt(sum.fixedPlanned)})</button>
+            <button type="button" data-bfilter="variable" class="bfilter-btn py-1.5 rounded-lg text-xs font-bold ${budgetTypeFilter === 'variable' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-teal-300 shadow-sm' : 'text-slate-500'}">متغيرة (${fmt(sum.varPlanned)})</button>
+          </div>
+
+          <div class="space-y-2.5">
+            ${filteredBudgets.map(b => {
+              const spent = sum.byBudget[b.id] || 0;
+              const planned = Number(b.planned) || 0;
+              const left = planned - spent;
+              const pct = planned > 0 ? Math.min(100, Math.round((spent / planned) * 100)) : (spent > 0 ? 100 : 0);
+              const barColor = spent > planned && planned > 0 ? 'bg-rose-500' : pct >= 80 ? 'bg-amber-500' : 'bg-brand-600';
+              const cat = getCatById(b.catId);
+              return `
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="text-base">${cat.icon}</span>
+                      <div class="min-w-0">
+                        <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100 truncate">${escapeHtml(b.name)}</div>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${b.type === 'fixed' ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300' : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'}">
+                          ${b.type === 'fixed' ? 'ثابت' : 'متغير'}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button type="button" data-edit-budget="${escapeHtml(b.id)}" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-brand-50 text-xs font-extrabold text-slate-800 dark:text-slate-100">
+                        ${fmt(planned)} ج
+                      </button>
+                      <button type="button" data-quick-spend="${escapeHtml(b.id)}" class="p-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700" title="صرف من هذا البند">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div class="h-full ${barColor} rounded-full transition-all" style="width:${pct}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] mt-1 font-semibold">
+                      <span class="text-slate-500 dark:text-slate-400">المصروف: <strong class="text-slate-700 dark:text-slate-200">${fmt(spent)} ج</strong></span>
+                      <span class="${left < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}">
+                        ${left < 0 ? ('تجاوز بـ ' + fmt(Math.abs(left))) : ('المتبقي: ' + fmt(left))} ج
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+
+      document.getElementById('btnAddIncome').addEventListener('click', () => openIncomeModal());
+      document.getElementById('btnAddBudget').addEventListener('click', () => openBudgetModal());
+      container.querySelectorAll('.bfilter-btn').forEach(btn => {
+        btn.addEventListener('click', () => { budgetTypeFilter = btn.dataset.bfilter; renderAll(); });
+      });
+      container.querySelectorAll('[data-edit-inc]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const inc = (month.incomes || []).find(x => x.id === btn.dataset.editInc);
+          if (!inc) return;
+          if (inc.userId !== state.activeUserId) {
+            showToast(`هذا الدخل مسجل باسم ${state.users[inc.userId].name} — بدّل الحساب للتعديل`, 'warn');
+            return;
+          }
+          openIncomeModal(inc);
+        });
+      });
+      container.querySelectorAll('[data-edit-budget]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const b = (month.budgets || []).find(x => x.id === btn.dataset.editBudget);
+          if (b) openBudgetModal(b);
+        });
+      });
+      container.querySelectorAll('[data-quick-spend]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const b = (month.budgets || []).find(x => x.id === btn.dataset.quickSpend);
+          openExpenseModal(null, b ? b.id : '', b ? b.catId : '');
+        });
+      });
+    }
+
+    // =========================================================================
+    // 9. TAB 3: DAILY EXPENSES LEDGER (سجل المصروفات اليومي)
+    // =========================================================================
+    function renderExpensesTab(container) {
+      const month = getCurrentMonth();
+      const all = month.expenses || [];
+      const filtered = all.filter(e => {
+        if (expenseFilter.user !== 'all' && e.userId !== expenseFilter.user) return false;
+        if (expenseFilter.catId !== 'all' && e.catId !== expenseFilter.catId) return false;
+        if (expenseFilter.budgetId !== 'all' && e.budgetId !== expenseFilter.budgetId) return false;
+        if (expenseFilter.search.trim()) {
+          const q = expenseFilter.search.trim().toLowerCase();
+          const hay = `${e.itemName} ${e.subName} ${e.note || ''} ${getCatById(e.catId).name}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      }).sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+
+      const filteredTotal = filtered.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+      const grouped = {};
+      filtered.forEach(e => {
+        const d = e.date || 'بدون تاريخ';
+        if (!grouped[d]) grouped[d] = [];
+        grouped[d].push(e);
+      });
+
+      container.innerHTML = `
+        <!-- Search & Filter Box -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2.5">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+            <input id="expSearchInput" type="text" value="${escapeHtml(expenseFilter.search)}" placeholder="ابحث في المصروفات (بانيه، توكتوك، فول...)" class="w-full pr-9 pl-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-brand-600" />
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-ufilter="all" class="ufilter-btn py-1.5 rounded-lg text-xs font-bold ${expenseFilter.user === 'all' ? 'bg-brand-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}">الكل</button>
+            <button type="button" data-ufilter="mahmoud" class="ufilter-btn py-1.5 rounded-lg text-xs font-bold ${expenseFilter.user === 'mahmoud' ? 'bg-sky-600 text-white' : 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300'}">${escapeHtml(state.users.mahmoud.name)}</button>
+            <button type="button" data-ufilter="nora" class="ufilter-btn py-1.5 rounded-lg text-xs font-bold ${expenseFilter.user === 'nora' ? 'bg-pink-600 text-white' : 'bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300'}">${escapeHtml(state.users.nora.name)}</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="expCatFilter" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold text-slate-700 dark:text-slate-200">
+              <option value="all">كل الفئات</option>
+              ${CATALOG.map(c => `<option value="${escapeHtml(c.id)}" ${expenseFilter.catId === c.id ? 'selected' : ''}>${c.icon} ${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+            <select id="expBudFilter" class="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold text-slate-700 dark:text-slate-200">
+              <option value="all">كل بنود الميزانية</option>
+              ${(month.budgets || []).map(b => `<option value="${escapeHtml(b.id)}" ${expenseFilter.budgetId === b.id ? 'selected' : ''}>${escapeHtml(b.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-700 text-xs">
+            <span class="text-slate-500 dark:text-slate-400 font-semibold">عدد النتائج: <strong>${filtered.length}</strong></span>
+            <span class="font-extrabold text-brand-700 dark:text-teal-400">الإجمالي: ${fmt(filteredTotal)} ج</span>
+          </div>
+        </section>
+
+        <!-- Grouped Daily List -->
+        ${filtered.length === 0 ? `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700 text-center">
+            <div class="text-3xl mb-2">🧾</div>
+            <div class="text-sm font-extrabold text-slate-700 dark:text-slate-200">لا توجد مصروفات مطابقة</div>
+            <p class="text-xs text-slate-400 mt-1">اضغط على زر (+) بالأسفل لإضافة مصروف جديد بسهولة</p>
+            <button type="button" id="btnEmptyAddExp" class="mt-3 px-4 py-2 rounded-xl bg-brand-700 text-white text-xs font-bold">+ تسجيل مصروف الآن</button>
+          </div>
+        ` : Object.keys(grouped).map(dateKey => {
+          const dayItems = grouped[dateKey];
+          const daySum = dayItems.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+          return `
+            <section class="space-y-2">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-xs font-extrabold text-slate-600 dark:text-slate-300">📅 ${escapeHtml(dateKey)}</span>
+                <span class="text-xs font-extrabold text-brand-700 dark:text-teal-400">${fmt(daySum)} ج</span>
+              </div>
+              <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 shadow-sm overflow-hidden">
+                ${dayItems.map(e => {
+                  const cat = getCatById(e.catId);
+                  const usr = state.users[e.userId] || state.users.mahmoud;
+                  const bud = (month.budgets || []).find(b => b.id === e.budgetId);
+                  const isOwner = e.userId === state.activeUserId;
+                  return `
+                    <div class="p-3 flex items-start justify-between gap-2.5">
+                      <div class="flex items-start gap-2.5 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg shrink-0">${cat.icon}</div>
+                        <div class="min-w-0">
+                          <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100">${escapeHtml(e.itemName)}</div>
+                          <div class="text-[11px] text-slate-500 dark:text-slate-400">${escapeHtml(cat.name)} • ${escapeHtml(e.subName || '')}</div>
+                          ${e.note ? `<div class="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 px-2 py-0.5 rounded mt-1 inline-block">${escapeHtml(e.note)}</div>` : ''}
+                          <div class="flex items-center flex-wrap gap-1.5 mt-1.5">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:${usr.bg};color:${usr.color}">صرف: ${escapeHtml(usr.name)}</span>
+                            ${bud ? `<span class="text-[10px] font-semibold bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-teal-300 px-2 py-0.5 rounded-full">${escapeHtml(bud.name)}</span>` : ''}
+                            ${e.time ? `<span class="text-[10px] text-slate-400">${escapeHtml(e.time)}</span>` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex flex-col items-end gap-1.5 shrink-0">
+                        <div class="text-sm font-extrabold text-slate-900 dark:text-white">${fmt(e.amount)} <span class="text-[10px] text-slate-400">ج</span></div>
+                        <div class="flex items-center gap-1">
+                          <button type="button" data-edit-exp="${escapeHtml(e.id)}" class="p-1.5 rounded-lg ${isOwner ? 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:text-brand-700' : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600'}" title="${isOwner ? 'تعديل' : 'خاص بالطرف الآخر'}">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                          </button>
+                          <button type="button" data-del-exp="${escapeHtml(e.id)}" class="p-1.5 rounded-lg ${isOwner ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100' : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600'}" title="${isOwner ? 'حذف' : 'خاص بالطرف الآخر'}">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </section>
+          `;
+        }).join('')}
+      `;
+
+      const searchEl = document.getElementById('expSearchInput');
+      searchEl.addEventListener('input', ev => {
+        expenseFilter.search = ev.target.value;
+        renderAll();
+        const newEl = document.getElementById('expSearchInput');
+        if (newEl) { newEl.focus(); newEl.setSelectionRange(newEl.value.length, newEl.value.length); }
+      });
+      container.querySelectorAll('.ufilter-btn').forEach(btn => {
+        btn.addEventListener('click', () => { expenseFilter.user = btn.dataset.ufilter; renderAll(); });
+      });
+      document.getElementById('expCatFilter').addEventListener('change', ev => { expenseFilter.catId = ev.target.value; renderAll(); });
+      document.getElementById('expBudFilter').addEventListener('change', ev => { expenseFilter.budgetId = ev.target.value; renderAll(); });
+
+      const emptyBtn = document.getElementById('btnEmptyAddExp');
+      if (emptyBtn) emptyBtn.addEventListener('click', () => openExpenseModal());
+
+      container.querySelectorAll('[data-edit-exp]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exp = all.find(x => x.id === btn.dataset.editExp);
+          if (!exp) return;
+          if (exp.userId !== state.activeUserId) {
+            showToast(`هذا المصروف أضافه ${state.users[exp.userId].name} — بدّل لحسابه للتعديل`, 'warn');
+            return;
+          }
+          openExpenseModal(exp);
+        });
+      });
+
+      container.querySelectorAll('[data-del-exp]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exp = all.find(x => x.id === btn.dataset.delExp);
+          if (!exp) return;
+          if (exp.userId !== state.activeUserId) {
+            showToast(`لا يمكن حذف مصروف أضافه ${state.users[exp.userId].name}`, 'warn');
+            return;
+          }
+          openConfirmModal(`حذف "${exp.itemName}" (${fmt(exp.amount)} ج)؟`, () => {
+            month.expenses = month.expenses.filter(x => x.id !== exp.id);
+            state.deletedIds.push(exp.id);
+            logActivity(`حذف مصروف "${exp.itemName}" (${fmt(exp.amount)} ج)`);
+            saveState();
+            renderAll();
+            showToast('تم حذف المصروف');
+          });
+        });
+      });
+    }
+
+    // =========================================================================
+    // 10. TAB 4: SYNC, MOBILE INSTALL & SETTINGS (المزامنة والتثبيت والإعدادات)
+    // =========================================================================
+    function renderSettingsTab(container) {
+      const uM = state.users.mahmoud;
+      const uN = state.users.nora;
+      container.innerHTML = `
+        <!-- Live Cloud Sync Card -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-900/50 text-brand-700 dark:text-teal-300 flex items-center justify-center"><i data-lucide="cloud" class="w-5 h-5"></i></span>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">المزامنة المباشرة بين موبايلك وموبايل زوجتك</h2>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">مزامنة تلقائية كل 15 ثانية عبر Firebase</p>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">رابط قاعدة بيانات Firebase Realtime DB</label>
+            <input id="firebaseUrlInput" type="url" dir="ltr" value="${escapeHtml(state.sync.firebaseUrl || '')}" placeholder="https://your-project-default-rtdb.firebaseio.com" class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-brand-600" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnSaveFirebase" class="py-2 rounded-xl bg-brand-700 text-white text-xs font-bold hover:bg-brand-800">حفظ وتفعيل المزامنة</button>
+            <button type="button" id="btnPullFirebase" class="py-2 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-800 dark:text-teal-300 text-xs font-bold hover:bg-brand-100">تحديث البيانات الآن</button>
+          </div>
+          <div class="text-[11px] text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 rounded-xl p-2.5 border border-amber-200 dark:border-amber-800 space-y-1.5">
+            <div class="font-extrabold">مهم جداً لو ظهر "مقفول من Rules (401)":</div>
+            <p class="leading-relaxed">افتح مشروعك في Firebase ← <strong>Realtime Database</strong> ← تبويب <strong>Rules</strong> واستبدل الكود بالتالي ثم اضغط <strong>Publish</strong>:</p>
+            <pre dir="ltr" class="bg-slate-900 text-emerald-300 text-[10px] p-2 rounded-lg overflow-x-auto">{ "rules": { ".read": true, ".write": true } }</pre>
+            <button type="button" id="btnCopyRules" class="w-full py-1.5 rounded-lg bg-amber-600 text-white text-[11px] font-bold">نسخ كود Rules</button>
+          </div>
+        </section>
+
+        <!-- Appearance & Security Quick Controls -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2.5">
+          <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">المظهر والأمان</h2>
+          <div class="flex items-center justify-between py-1">
+            <div>
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">الوضع الليلي (Dark Mode)</div>
+              <div class="text-[11px] text-slate-400">مريح للعين عند تسجيل المصروفات ليلاً</div>
+            </div>
+            <button type="button" id="btnToggleDark" class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold ${state.darkMode ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-700'}">
+              ${state.darkMode ? 'مفعّل 🌙' : 'إيقاف ☀️'}
+            </button>
+          </div>
+          <button type="button" id="btnLogoutNow" class="w-full py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 text-xs font-extrabold flex items-center justify-center gap-1.5">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>تسجيل الخروج والعودة لشاشة الرقم السري</span>
+          </button>
+        </section>
+
+        <!-- Instant WhatsApp / Smart Merge Sync & Excel Export -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center"><i data-lucide="share-2" class="w-5 h-5"></i></span>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">نسخ احتياطي ومزامنة عبر واتساب</h2>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">دمج فوري أو تصدير شيت Excel كامل للشهر</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnCopySyncCode" class="py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">نسخ كود التحديث</button>
+            <button type="button" id="btnImportSyncCode" class="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold">استيراد ودمج كود</button>
+          </div>
+          <button type="button" id="btnExportCsv" class="w-full py-2.5 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/40 text-brand-800 dark:text-teal-300 text-xs font-bold flex items-center justify-center gap-1.5">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>تصدير مصروفات الشهر لملف Excel (CSV)</span>
+          </button>
+        </section>
+
+        <!-- Mobile App Install Guide (PWA) -->
+        <section class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center"><i data-lucide="download" class="w-5 h-5 text-teal-300"></i></span>
+            <div>
+              <h2 class="text-sm font-extrabold">تثبيت التطبيق على الموبايل (أندرويد وآيفون)</h2>
+              <p class="text-[11px] text-slate-300">يعمل كأيقونة تطبيق مستقلة بملء الشاشة</p>
+            </div>
+          </div>
+          <button type="button" id="btnPwaInstall" class="hidden w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-extrabold">تثبيت التطبيق الآن على الهاتف</button>
+          <div class="text-[11px] text-slate-200 space-y-1.5 bg-white/10 rounded-xl p-3 leading-relaxed">
+            <div><strong>1. رابط مباشر مجاني:</strong> حمّل ملف التطبيق وارفعه على <strong>app.netlify.com/drop</strong> (أو GitHub Pages) لتحصل على رابط دائم تفتحه على الموبايلين.</div>
+            <div><strong>2. أندرويد (Chrome):</strong> افتح الرابط ← القائمة (⋮) ← <strong>تثبيت التطبيق / الإضافة إلى الشاشة الرئيسية</strong>.</div>
+            <div><strong>3. آيفون (Safari):</strong> افتح الرابط ← زر المشاركة ← <strong>إضافة إلى الشاشة الرئيسية</strong>.</div>
+          </div>
+        </section>
+
+        <!-- User Profiles & PINs -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+          <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">إعدادات الحسابين والرقم السري</h2>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900 space-y-2">
+              <div class="text-xs font-extrabold text-sky-800 dark:text-sky-300">حساب الزوج</div>
+              <input id="nameMahmoud" type="text" value="${escapeHtml(uM.name)}" class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 rounded-lg font-bold" placeholder="الاسم" />
+              <input id="pinMahmoud" type="password" inputmode="numeric" maxlength="4" value="${escapeHtml(uM.pin || '2006')}" class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 rounded-lg" placeholder="PIN (4 أرقام)" />
+            </div>
+            <div class="p-2.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-900 space-y-2">
+              <div class="text-xs font-extrabold text-pink-800 dark:text-pink-300">حساب الزوجة</div>
+              <input id="nameNora" type="text" value="${escapeHtml(uN.name)}" class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-lg font-bold" placeholder="الاسم" />
+              <input id="pinNora" type="password" inputmode="numeric" maxlength="4" value="${escapeHtml(uN.pin || '2109')}" class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-lg" placeholder="PIN (4 أرقام)" />
+            </div>
+          </div>
+          <button type="button" id="btnSaveProfiles" class="w-full py-2 rounded-xl bg-slate-800 dark:bg-brand-700 text-white text-xs font-bold">حفظ إعدادات الحسابين</button>
+        </section>
+      `;
+
+      document.getElementById('btnSaveFirebase').addEventListener('click', () => {
+        const val = normalizeFirebaseUrl(document.getElementById('firebaseUrlInput').value);
+        state.sync.firebaseUrl = val;
+        document.getElementById('firebaseUrlInput').value = val;
+        saveState(true);
+        startCloudAutoSync();
+        if (val) pullFromFirebase(true);
+        else { updateSyncIndicator('local', 'محفوظ على الجهاز'); showToast('تم إيقاف المزامنة السحابية'); }
+      });
+
+      document.getElementById('btnPullFirebase').addEventListener('click', () => {
+        if (!state.sync.firebaseUrl) { showToast('أدخل رابط Firebase أولاً', 'warn'); return; }
+        pullFromFirebase(true);
+      });
+
+      document.getElementById('btnCopyRules').addEventListener('click', () => {
+        copyTextSafe('{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}');
+        showToast('تم نسخ كود Rules — الصقه في Firebase ثم اضغط Publish');
+      });
+
+      document.getElementById('btnToggleDark').addEventListener('click', () => {
+        state.darkMode = !state.darkMode;
+        saveState(true);
+        renderAll();
+      });
+
+      document.getElementById('btnLogoutNow').addEventListener('click', lockAndLogout);
+
+      document.getElementById('btnCopySyncCode').addEventListener('click', () => {
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+        copyTextSafe(encoded);
+        showToast('تم نسخ كود التحديث — ابعته على واتساب للطرف الآخر');
+      });
+
+      document.getElementById('btnImportSyncCode').addEventListener('click', openImportSyncModal);
+      document.getElementById('btnExportCsv').addEventListener('click', exportCurrentMonthCsv);
+
+      document.getElementById('btnSaveProfiles').addEventListener('click', () => {
+        const nm = document.getElementById('nameMahmoud').value.trim() || 'محمود';
+        const nn = document.getElementById('nameNora').value.trim() || 'نورا';
+        const pm = document.getElementById('pinMahmoud').value.trim();
+        const pn = document.getElementById('pinNora').value.trim();
+        if ((pm && pm.length !== 4) || (pn && pn.length !== 4)) {
+          showToast('الرقم السري يجب أن يكون 4 أرقام', 'error');
+          return;
+        }
+        state.users.mahmoud.name = nm;
+        state.users.mahmoud.avatar = nm[0] || 'م';
+        state.users.mahmoud.pin = pm || '2006';
+        state.users.nora.name = nn;
+        state.users.nora.avatar = nn[0] || 'ن';
+        state.users.nora.pin = pn || '2109';
+        saveState();
+        renderAll();
+        showToast('تم حفظ بيانات الحسابين والأرقام السرية');
+      });
+
+      if (window._deferredInstallPrompt) {
+        const pwaBtn = document.getElementById('btnPwaInstall');
+        pwaBtn.classList.remove('hidden');
+        pwaBtn.addEventListener('click', async () => {
+          window._deferredInstallPrompt.prompt();
+          await window._deferredInstallPrompt.userChoice;
+          window._deferredInstallPrompt = null;
+          pwaBtn.classList.add('hidden');
+        });
+      }
+    }
+
+    function copyTextSafe(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    }
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    function exportCurrentMonthCsv() {
+      const month = getCurrentMonth();
+      const rows = [['التاريخ', 'الوقت', 'الصنف', 'الفئة', 'التصنيف الفرعي', 'بند الميزانية', 'المبلغ (ج)', 'المستخدم', 'ملاحظات']];
+      (month.expenses || []).forEach(e => {
+        const cat = getCatById(e.catId);
+        const bud = (month.budgets || []).find(b => b.id === e.budgetId);
+        const usr = state.users[e.userId] || state.users.mahmoud;
+        rows.push([e.date, e.time || '', e.itemName, cat.name, e.subName || '', bud ? bud.name : '', e.amount, usr.name, e.note || '']);
+      });
+      const csv = '\uFEFF' + rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `مصروفات_${month.key}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('تم تحميل ملف Excel (CSV) بنجاح');
+    }
+
+    // =========================================================================
+    // 11. MODALS (SHOPPING LIST, COUPLE NOTE, ADD/EDIT EXPENSE, INCOME, BUDGET, SWITCH USER, DEBT, MONTH, IMPORT)
+    // =========================================================================
+    function showModal(html) {
+      const mc = document.getElementById('modalContainer');
+      mc.className = 'modal-backdrop';
+      mc.innerHTML = `<div class="modal-sheet p-4 pb-6">${html}</div>`;
+      mc.onclick = (e) => { if (e.target === mc) closeModal(); };
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeModal() {
+      const mc = document.getElementById('modalContainer');
+      mc.className = 'hidden';
+      mc.innerHTML = '';
+    }
+
+    // --- SHARED SHOPPING LIST MODAL ("طلبات البيت" — مثل النوتس المشتركة!) ---
+    function openShoppingListModal() {
+      const list = state.shoppingList || [];
+      const pending = list.filter(x => !x.done);
+      const done = list.filter(x => x.done);
+
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">🧺 قائمة طلبات البيت المشتركة</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">اكتب الطلبات هنا — وعند الشراء اضغط "تم الشراء" لتتحول لمصروف فوراً</p>
+          </div>
+          <button type="button" id="closeShopModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Add Shopping Item -->
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 mb-3">
+          <div class="flex gap-1.5">
+            <input id="shopItemName" type="text" placeholder="اكتب الطلب (مثال: كيلو بانيه، ٦ ورك، لبن...)" class="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+            <button type="button" id="btnAddShopItem" class="px-3.5 py-2 rounded-xl bg-brand-700 text-white text-xs font-extrabold shrink-0">إضافة</button>
+          </div>
+          <input id="shopItemQty" type="text" placeholder="ملاحظة / كمية (مثال: كل نص لوحده، من عند عكوش...)" class="w-full px-3 py-1.5 text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg" />
+        </div>
+
+        <!-- Pending Items -->
+        <div class="space-y-2 mb-3">
+          <div class="text-xs font-extrabold text-slate-600 dark:text-slate-300">مطلوب شراؤه (${pending.length})</div>
+          ${pending.length === 0 ? `
+            <div class="text-center py-4 text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">لا توجد طلبات حالياً — أضف أي صنف من فوق</div>
+          ` : pending.map(item => {
+            const usr = state.users[item.userId] || state.users.nora;
+            return `
+              <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100">${escapeHtml(item.name)}</div>
+                  ${item.note ? `<div class="text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(item.note)}</div>` : ''}
+                  <span class="text-[10px] font-bold" style="color:${usr.color}">طلبه: ${escapeHtml(usr.name)}</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button type="button" data-buy-shop="${escapeHtml(item.id)}" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">تم الشراء ✓</button>
+                  <button type="button" data-del-shop="${escapeHtml(item.id)}" class="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        ${done.length > 0 ? `
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400">تم شراؤه (${done.length})</span>
+              <button type="button" id="btnClearDoneShop" class="text-[11px] font-bold text-rose-600">مسح المكتمل</button>
+            </div>
+            ${done.map(item => `
+              <div class="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 flex items-center justify-between text-xs text-slate-400 line-through">
+                <span>${escapeHtml(item.name)}</span>
+                <span>${item.paidAmount ? fmt(item.paidAmount) + ' ج' : '✓'}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      `);
+
+      document.getElementById('closeShopModal').addEventListener('click', closeModal);
+      document.getElementById('btnAddShopItem').addEventListener('click', () => {
+        const name = document.getElementById('shopItemName').value.trim();
+        const note = document.getElementById('shopItemQty').value.trim();
+        if (!name) { showToast('اكتب اسم الصنف المطلوب', 'error'); return; }
+        state.shoppingList.unshift({ id: 'shop_' + Date.now(), name, note, done: false, userId: state.activeUserId });
+        logActivity(`أضاف "${name}" إلى قائمة طلبات البيت`);
+        saveState();
+        renderAll();
+        openShoppingListModal();
+      });
+
+      document.querySelectorAll('[data-del-shop]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sid = btn.dataset.delShop;
+          state.shoppingList = state.shoppingList.filter(x => x.id !== sid);
+          state.deletedIds.push(sid);
+          saveState();
+          renderAll();
+          openShoppingListModal();
+        });
+      });
+
+      document.querySelectorAll('[data-buy-shop]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = state.shoppingList.find(x => x.id === btn.dataset.buyShop);
+          if (!item) return;
+          openBuyShopItemModal(item);
+        });
+      });
+
+      const clearBtn = document.getElementById('btnClearDoneShop');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          state.shoppingList.filter(x => x.done).forEach(x => state.deletedIds.push(x.id));
+          state.shoppingList = state.shoppingList.filter(x => !x.done);
+          saveState();
+          renderAll();
+          openShoppingListModal();
+        });
+      }
+    }
+
+    function openBuyShopItemModal(shopItem) {
+      const month = getCurrentMonth();
+      const homeBud = (month.budgets || []).find(b => b.name.includes('البيت')) || (month.budgets || [])[0];
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">تأكيد شراء "${escapeHtml(shopItem.name)}"</h3>
+          <button type="button" id="closeBuyModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">أدخل المبلغ الذي دفعته ليتم تسجيله تلقائياً في مصروفات الشهر باسم <strong>${escapeHtml(getActiveUser().name)}</strong>.</p>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المبلغ المدفوع (جنيه)</label>
+            <input id="buyShopAmount" type="number" inputmode="decimal" placeholder="0" class="w-full px-3 py-2.5 text-xl font-extrabold text-brand-700 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">يُخصم من بند الميزانية</label>
+            <select id="buyShopBudget" class="w-full px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
+              ${(month.budgets || []).map(b => `<option value="${escapeHtml(b.id)}" ${homeBud && b.id === homeBud.id ? 'selected' : ''}>${escapeHtml(b.name)}</option>`).join('')}
+            </select>
+          </div>
+          <button type="button" id="btnConfirmBuyShop" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">تسجيل كمصروف وإتمام الشراء ✓</button>
+        </div>
+      `);
+      document.getElementById('closeBuyModal').addEventListener('click', openShoppingListModal);
+      document.getElementById('buyShopAmount').focus();
+      document.getElementById('btnConfirmBuyShop').addEventListener('click', () => {
+        const amt = Number(document.getElementById('buyShopAmount').value);
+        if (!amt || amt <= 0) { showToast('أدخل المبلغ المدفوع', 'error'); return; }
+        const matched = FLAT_CATALOG.find(f => shopItem.name.includes(f.itemName));
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const nowTime = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        month.expenses.unshift({
+          id: 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          date: month.key === todayStr.slice(0, 7) ? todayStr : (month.key + '-01'),
+          time: nowTime,
+          amount: amt,
+          catId: matched ? matched.catId : 'pantry_spices',
+          subName: matched ? matched.subName : 'طلبات البيت',
+          itemName: shopItem.name,
+          budgetId: document.getElementById('buyShopBudget').value,
+          note: shopItem.note || 'من قائمة طلبات البيت',
+          userId: state.activeUserId,
+          createdAt: new Date().toISOString()
+        });
+        shopItem.done = true;
+        shopItem.paidAmount = amt;
+        logActivity(`اشترى "${shopItem.name}" من طلبات البيت بمبلغ ${fmt(amt)} ج`);
+        saveState();
+        renderAll();
+        openShoppingListModal();
+        showToast(`تم تسجيل "${shopItem.name}" (${fmt(amt)} ج) في المصروفات`);
+      });
+    }
+
+    // --- COUPLE NOTE MODAL ---
+    function openCoupleNoteModal() {
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">💌 رسالة / تذكير سريع</h3>
+          <button type="button" id="closeNoteModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <textarea id="coupleNoteInput" rows="3" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold mb-3" placeholder="اكتب رسالة أو تذكير يظهر في الصفحة الرئيسية للطرف الآخر...">${escapeHtml(state.coupleNote?.text || '')}</textarea>
+        <div class="flex gap-2">
+          <button type="button" id="btnSaveCoupleNote" class="flex-1 py-2.5 rounded-xl bg-brand-700 text-white text-xs font-extrabold">تثبيت الرسالة</button>
+          <button type="button" id="btnClearCoupleNote" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 text-xs font-bold">مسح</button>
+        </div>
+      `);
+      document.getElementById('closeNoteModal').addEventListener('click', closeModal);
+      document.getElementById('btnSaveCoupleNote').addEventListener('click', () => {
+        const txt = document.getElementById('coupleNoteInput').value.trim();
+        state.coupleNote = { text: txt, userId: state.activeUserId, updatedAt: new Date().toISOString() };
+        if (txt) logActivity(`ثبّت رسالة تذكير: "${txt.slice(0, 30)}"`);
+        saveState();
+        closeModal();
+        renderAll();
+        showToast('تم حفظ الرسالة');
+      });
+      document.getElementById('btnClearCoupleNote').addEventListener('click', () => {
+        state.coupleNote = { text: '', userId: state.activeUserId, updatedAt: new Date().toISOString() };
+        saveState();
+        closeModal();
+        renderAll();
+      });
+    }
+
+    // --- ADD / EDIT EXPENSE MODAL ---
+    function openExpenseModal(existingExp = null, preBudgetId = '', preCatId = '') {
+      const month = getCurrentMonth();
+      const usr = getActiveUser();
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const defaultDate = existingExp ? existingExp.date : (month.key === todayStr.slice(0, 7) ? todayStr : (month.key + '-01'));
+
+      let selectedCatId = existingExp ? existingExp.catId : (preCatId || 'poultry_meat');
+      let selectedSubName = existingExp ? existingExp.subName : getCatById(selectedCatId).subcategories[0].name;
+      let selectedItemName = existingExp ? existingExp.itemName : '';
+      let isCustomOther = existingExp ? (selectedCatId === 'other' || !FLAT_CATALOG.some(f => f.itemName === existingExp.itemName)) : false;
+
+      function findBudgetIdForCat(cid) {
+        if (preBudgetId) return preBudgetId;
+        const c = getCatById(cid);
+        const match = (month.budgets || []).find(b => b.name === c.defaultBudgetName) || (month.budgets || []).find(b => b.catId === cid);
+        return match ? match.id : ((month.budgets[0] && month.budgets[0].id) || '');
+      }
+
+      let selectedBudgetId = existingExp ? existingExp.budgetId : findBudgetIdForCat(selectedCatId);
+
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">${existingExp ? 'تعديل مصروف' : 'تسجيل مصروف جديد'}</h3>
+            <div class="text-[11px] font-bold" style="color:${usr.color}">بواسطة: ${escapeHtml(usr.name)} • ${escapeHtml(month.label)}</div>
+          </div>
+          <button type="button" id="closeExpModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Quick Daily Favorites (1-Tap Shortcuts) -->
+        ${!existingExp ? `
+          <div class="mb-2.5">
+            <div class="text-[10px] font-bold text-slate-400 mb-1">اختصارات سريعة متكررة:</div>
+            <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              ${QUICK_FAVORITES.map((f, i) => `<button type="button" data-qfav="${i}" class="qfav-btn shrink-0 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-brand-100 text-[11px] font-bold text-slate-700 dark:text-slate-200">${f.label}</button>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- 1. Instant Smart Search -->
+        <div class="relative mb-3">
+          <i data-lucide="search" class="w-4 h-4 text-brand-600 absolute right-3 top-3"></i>
+          <input id="smartItemSearch" type="text" placeholder="ابحث بسرعة: بانيه، توكتوك، فول، مولفيكس، كهرباء..." class="w-full pr-9 pl-3 py-2.5 text-xs bg-brand-50/70 dark:bg-slate-900 border border-brand-200 dark:border-slate-700 rounded-xl font-bold focus:outline-none focus:border-brand-600" />
+          <div id="smartSearchResults" class="hidden absolute left-0 right-0 top-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700"></div>
+        </div>
+
+        <!-- 2. Amount Input + Quick Chips -->
+        <div class="mb-3">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المبلغ المدفوع (جنيه)</label>
+          <input id="expAmountInput" type="number" inputmode="decimal" step="0.5" value="${existingExp ? existingExp.amount : ''}" placeholder="0" class="w-full px-3.5 py-2.5 text-xl font-extrabold text-brand-800 dark:text-teal-300 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:border-brand-600" />
+          <div class="flex gap-1.5 mt-1.5 overflow-x-auto no-scrollbar">
+            ${[10, 20, 50, 100, 200, 500].map(v => `<button type="button" data-qamt="${v}" class="qamt-btn shrink-0 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-brand-100 text-[11px] font-bold text-slate-700 dark:text-slate-200">+${v}</button>`).join('')}
+          </div>
+        </div>
+
+        <!-- 3. Category Horizontal Picker -->
+        <div class="mb-2.5">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">1. اختر الفئة الرئيسية</label>
+          <div id="catPicker" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+        </div>
+
+        <!-- 4. Subcategory Picker -->
+        <div class="mb-2.5">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">2. التصنيف الفرعي</label>
+          <div id="subPicker" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+        </div>
+
+        <!-- 5. Items Picker -->
+        <div class="mb-3">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">3. اختر الصنف (أو اضغط "أخرى" للكتابة اليدوية)</label>
+          <div id="itemPicker" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700"></div>
+        </div>
+
+        <!-- Custom "أخرى" Manual Input -->
+        <div id="customItemWrap" class="${isCustomOther ? '' : 'hidden'} mb-3">
+          <label class="block text-xs font-bold text-amber-700 dark:text-amber-300 mb-1">اكتب اسم المصروف / الصنف يدوياً</label>
+          <input id="customItemInput" type="text" value="${escapeHtml(selectedItemName)}" placeholder="مثال: تصليح كوتشي عمر، شحن كارت..." class="w-full px-3 py-2 text-xs bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-xl font-bold focus:outline-none focus:border-amber-600" />
+        </div>
+
+        <!-- Selected Summary Pill -->
+        <div class="mb-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+          <span class="text-slate-500 dark:text-slate-400 font-semibold">الصنف المختار:</span>
+          <span id="chosenItemBadge" class="font-extrabold text-brand-800 dark:text-teal-300">${escapeHtml(selectedItemName || 'اختر صنفاً أو اكتب يدوياً')}</span>
+        </div>
+
+        <!-- 6. Budget Envelope + Date + Note -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">يُخصم من بند الميزانية</label>
+            <select id="expBudgetSelect" class="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
+              ${(month.budgets || []).map(b => `<option value="${escapeHtml(b.id)}" ${b.id === selectedBudgetId ? 'selected' : ''}>${escapeHtml(b.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">التاريخ</label>
+            <input id="expDateInput" type="date" value="${escapeHtml(defaultDate)}" class="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">الكمية / ملاحظة (اختياري)</label>
+          <input id="expNoteInput" type="text" value="${escapeHtml(existingExp ? (existingExp.note || '') : '')}" placeholder="مثال: كيلو كل نص لوحده، من عند عكوش..." class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+        </div>
+
+        <button type="button" id="btnSubmitExpense" class="w-full py-3 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-sm font-extrabold shadow-md active:scale-95 transition">
+          ${existingExp ? 'حفظ التعديلات' : 'حفظ المصروف'}
+        </button>
+      `);
+
+      document.getElementById('closeExpModal').addEventListener('click', closeModal);
+
+      document.querySelectorAll('.qamt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const inp = document.getElementById('expAmountInput');
+          inp.value = (Number(inp.value) || 0) + Number(btn.dataset.qamt);
+        });
+      });
+
+      document.querySelectorAll('.qfav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const fav = QUICK_FAVORITES[Number(btn.dataset.qfav)];
+          selectedCatId = fav.catId;
+          selectedSubName = fav.subName;
+          selectedItemName = fav.itemName;
+          isCustomOther = false;
+          const autoBud = findBudgetIdForCat(fav.catId);
+          if (autoBud) document.getElementById('expBudgetSelect').value = autoBud;
+          renderPickers();
+          document.getElementById('expAmountInput').focus();
+        });
+      });
+
+      function updateChosenBadge() {
+        const badge = document.getElementById('chosenItemBadge');
+        const customVal = document.getElementById('customItemInput').value.trim();
+        badge.textContent = isCustomOther ? (customVal || 'أخرى (اكتب الاسم فوق)') : (selectedItemName || 'اختر صنفاً');
+      }
+
+      function renderPickers() {
+        const catEl = document.getElementById('catPicker');
+        catEl.innerHTML = CATALOG.map(c => `
+          <button type="button" data-cid="${c.id}" class="cat-chip shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 ${c.id === selectedCatId ? 'bg-brand-700 text-white border-brand-700' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'}">
+            <span>${c.icon}</span><span>${escapeHtml(c.name)}</span>
+          </button>
+        `).join('');
+
+        const curCat = getCatById(selectedCatId);
+        if (!curCat.subcategories.some(s => s.name === selectedSubName)) {
+          selectedSubName = curCat.subcategories[0].name;
+        }
+        const subEl = document.getElementById('subPicker');
+        subEl.innerHTML = curCat.subcategories.map(s => `
+          <button type="button" data-sname="${escapeHtml(s.name)}" class="sub-chip shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${s.name === selectedSubName ? 'bg-slate-800 dark:bg-teal-600 text-white border-slate-800 dark:border-teal-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 border-slate-200 dark:border-slate-600'}">
+            ${escapeHtml(s.name)}
+          </button>
+        `).join('');
+
+        const curSub = curCat.subcategories.find(s => s.name === selectedSubName) || curCat.subcategories[0];
+        const itemEl = document.getElementById('itemPicker');
+        itemEl.innerHTML = curSub.items.map(it => {
+          const isOtherBtn = it === 'أخرى';
+          const active = isOtherBtn ? isCustomOther : (!isCustomOther && selectedItemName === it);
+          return `
+            <button type="button" data-iname="${escapeHtml(it)}" class="item-chip px-2.5 py-1.5 rounded-lg text-xs font-bold border transition ${active ? (isOtherBtn ? 'bg-amber-600 text-white border-amber-600' : 'bg-brand-600 text-white border-brand-600') : (isOtherBtn ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700')}">
+              ${isOtherBtn ? '✏️ أخرى (كتابة يدوية)' : escapeHtml(it)}
+            </button>
+          `;
+        }).join('');
+
+        document.getElementById('customItemWrap').classList.toggle('hidden', !isCustomOther);
+        updateChosenBadge();
+
+        catEl.querySelectorAll('.cat-chip').forEach(b => {
+          b.addEventListener('click', () => {
+            selectedCatId = b.dataset.cid;
+            isCustomOther = (selectedCatId === 'other');
+            if (!isCustomOther) selectedItemName = '';
+            const autoBud = findBudgetIdForCat(selectedCatId);
+            if (autoBud) document.getElementById('expBudgetSelect').value = autoBud;
+            renderPickers();
+            if (isCustomOther) document.getElementById('customItemInput').focus();
+          });
+        });
+
+        subEl.querySelectorAll('.sub-chip').forEach(b => {
+          b.addEventListener('click', () => {
+            selectedSubName = b.dataset.sname;
+            renderPickers();
+          });
+        });
+
+        itemEl.querySelectorAll('.item-chip').forEach(b => {
+          b.addEventListener('click', () => {
+            const it = b.dataset.iname;
+            if (it === 'أخرى') {
+              isCustomOther = true;
+              renderPickers();
+              document.getElementById('customItemInput').focus();
+            } else {
+              isCustomOther = false;
+              selectedItemName = it;
+              renderPickers();
+            }
+          });
+        });
+      }
+
+      renderPickers();
+      document.getElementById('customItemInput').addEventListener('input', updateChosenBadge);
+
+      const smartInput = document.getElementById('smartItemSearch');
+      const smartRes = document.getElementById('smartSearchResults');
+      smartInput.addEventListener('input', () => {
+        const q = smartInput.value.trim().toLowerCase();
+        if (!q) { smartRes.classList.add('hidden'); return; }
+        const hits = FLAT_CATALOG.filter(f =>
+          f.itemName.toLowerCase().includes(q) ||
+          f.subName.toLowerCase().includes(q) ||
+          f.catName.toLowerCase().includes(q)
+        ).slice(0, 12);
+
+        let html = hits.map((h, i) => `
+          <button type="button" data-hit="${i}" class="smart-hit w-full text-right px-3 py-2 hover:bg-brand-50 dark:hover:bg-slate-700 flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100">${h.catIcon} ${escapeHtml(h.itemName)}</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(h.catName)} ← ${escapeHtml(h.subName)}</div>
+            </div>
+            <span class="text-[10px] font-bold text-brand-700 dark:text-teal-300 bg-brand-50 dark:bg-brand-900/40 px-2 py-0.5 rounded-full">اختيار</span>
+          </button>
+        `).join('');
+
+        html += `
+          <button type="button" id="smartUseCustom" class="w-full text-right px-3 py-2 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-xs font-extrabold text-amber-800 dark:text-amber-300">
+            ✏️ إضافة "${escapeHtml(smartInput.value.trim())}" كصنف مخصص (أخرى)
+          </button>
+        `;
+        smartRes.innerHTML = html;
+        smartRes.classList.remove('hidden');
+
+        smartRes.querySelectorAll('.smart-hit').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const h = hits[Number(btn.dataset.hit)];
+            selectedCatId = h.catId;
+            selectedSubName = h.subName;
+            selectedItemName = h.itemName;
+            isCustomOther = false;
+            const autoBud = findBudgetIdForCat(h.catId);
+            if (autoBud) document.getElementById('expBudgetSelect').value = autoBud;
+            smartInput.value = '';
+            smartRes.classList.add('hidden');
+            renderPickers();
+            document.getElementById('expAmountInput').focus();
+          });
+        });
+
+        document.getElementById('smartUseCustom').addEventListener('click', () => {
+          selectedCatId = 'other';
+          selectedSubName = 'مصروف مخصص';
+          isCustomOther = true;
+          selectedItemName = smartInput.value.trim();
+          document.getElementById('customItemInput').value = selectedItemName;
+          smartInput.value = '';
+          smartRes.classList.add('hidden');
+          renderPickers();
+          document.getElementById('expAmountInput').focus();
+        });
+      });
+
+      document.getElementById('btnSubmitExpense').addEventListener('click', () => {
+        const amt = Number(document.getElementById('expAmountInput').value);
+        if (!amt || amt <= 0) { showToast('أدخل مبلغاً صحيحاً أكبر من صفر', 'error'); return; }
+        const finalName = isCustomOther ? document.getElementById('customItemInput').value.trim() : selectedItemName;
+        if (!finalName) { showToast('اختر صنفاً أو اكتب اسم المصروف في خانة أخرى', 'error'); return; }
+
+        const budgetId = document.getElementById('expBudgetSelect').value;
+        const dateVal = document.getElementById('expDateInput').value || defaultDate;
+        const noteVal = document.getElementById('expNoteInput').value.trim();
+        const nowTime = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+        if (existingExp) {
+          existingExp.amount = amt;
+          existingExp.catId = selectedCatId;
+          existingExp.subName = selectedSubName;
+          existingExp.itemName = finalName;
+          existingExp.budgetId = budgetId;
+          existingExp.date = dateVal;
+          existingExp.note = noteVal;
+          logActivity(`عدّل مصروف "${finalName}" إلى ${fmt(amt)} ج`);
+          showToast('تم تعديل المصروف بنجاح');
+        } else {
+          month.expenses.unshift({
+            id: 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            date: dateVal,
+            time: nowTime,
+            amount: amt,
+            catId: selectedCatId,
+            subName: selectedSubName,
+            itemName: finalName,
+            budgetId,
+            note: noteVal,
+            userId: state.activeUserId,
+            createdAt: new Date().toISOString()
+          });
+          logActivity(`سجّل مصروف "${finalName}" بقيمة ${fmt(amt)} ج`);
+          showToast(`تم تسجيل "${finalName}" (${fmt(amt)} ج)`);
+        }
+        saveState();
+        closeModal();
+        renderAll();
+      });
+    }
+
+    // --- INCOME MODAL ---
+    function openIncomeModal(existingInc = null) {
+      const month = getCurrentMonth();
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">${existingInc ? 'تعديل مصدر دخل' : 'إضافة دخل جديد للشهر'}</h3>
+          <button type="button" id="closeIncModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اسم مصدر الدخل</label>
+            <input id="incNameInput" type="text" value="${escapeHtml(existingInc ? existingInc.name : '')}" placeholder="مثال: مرتب محمود، دخل نورا، منحة استثنائية، بونص..." class="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المبلغ (جنيه)</label>
+            <input id="incAmtInput" type="number" inputmode="decimal" value="${existingInc ? existingInc.amount : ''}" placeholder="0" class="w-full px-3 py-2.5 text-lg font-extrabold text-emerald-700 dark:text-emerald-400 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="btnSaveInc" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">حفظ الدخل</button>
+            ${existingInc ? `<button type="button" id="btnDelInc" class="px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 text-xs font-extrabold">حذف</button>` : ''}
+          </div>
+        </div>
+      `);
+      document.getElementById('closeIncModal').addEventListener('click', closeModal);
+      document.getElementById('btnSaveInc').addEventListener('click', () => {
+        const name = document.getElementById('incNameInput').value.trim();
+        const amt = Number(document.getElementById('incAmtInput').value);
+        if (!name || !amt || amt <= 0) { showToast('أدخل اسم الدخل والمبلغ بشكل صحيح', 'error'); return; }
+        if (existingInc) {
+          existingInc.name = name;
+          existingInc.amount = amt;
+          logActivity(`عدّل دخل "${name}" إلى ${fmt(amt)} ج`);
+        } else {
+          month.incomes.push({ id: 'inc_' + Date.now(), name, amount: amt, userId: state.activeUserId, createdAt: new Date().toISOString() });
+          logActivity(`أضاف دخل "${name}" بقيمة ${fmt(amt)} ج`);
+        }
+        saveState();
+        closeModal();
+        renderAll();
+        showToast('تم تحديث إجمالي الدخل');
+      });
+      if (existingInc) {
+        document.getElementById('btnDelInc').addEventListener('click', () => {
+          month.incomes = month.incomes.filter(x => x.id !== existingInc.id);
+          state.deletedIds.push(existingInc.id);
+          logActivity(`حذف مصدر دخل "${existingInc.name}"`);
+          saveState();
+          closeModal();
+          renderAll();
+          showToast('تم حذف مصدر الدخل');
+        });
+      }
+    }
+
+    // --- BUDGET ALLOCATION MODAL ---
+    function openBudgetModal(existingBud = null) {
+      const month = getCurrentMonth();
+      const sum = calcMonthSummary(month);
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">${existingBud ? 'تعديل قسم الميزانية' : 'إضافة قسم ميزانية جديد'}</h3>
+            <div class="text-[11px] text-brand-700 dark:text-teal-400 font-bold">المتاح حالياً للتقسيم: ${fmt(sum.unallocated + (existingBud ? Number(existingBud.planned) : 0))} ج</div>
+          </div>
+          <button type="button" id="closeBudModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اسم البند / القسم</label>
+            <input id="budNameInput" type="text" value="${escapeHtml(existingBud ? existingBud.name : '')}" placeholder="مثال: مصروف البيت والخزين، دروس عمر، كهرباء..." class="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">المبلغ المخصص (ج)</label>
+              <input id="budPlanInput" type="number" inputmode="decimal" value="${existingBud ? existingBud.planned : ''}" placeholder="0" class="w-full px-3 py-2 text-base font-extrabold text-brand-800 dark:text-teal-300 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">النوع</label>
+              <select id="budTypeSelect" class="w-full px-2.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
+                <option value="fixed" ${existingBud && existingBud.type === 'fixed' ? 'selected' : ''}>مصروف ثابت</option>
+                <option value="variable" ${!existingBud || existingBud.type === 'variable' ? 'selected' : ''}>مصروف متغير</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الأيقونة / الفئة المرتبطة</label>
+            <select id="budCatSelect" class="w-full px-2.5 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
+              ${CATALOG.map(c => `<option value="${c.id}" ${existingBud && existingBud.catId === c.id ? 'selected' : ''}>${c.icon} ${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="btnSaveBud" class="flex-1 py-2.5 rounded-xl bg-brand-700 text-white text-xs font-extrabold">حفظ وتخصيص</button>
+            ${existingBud ? `<button type="button" id="btnDelBud" class="px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 text-xs font-extrabold">حذف</button>` : ''}
+          </div>
+        </div>
+      `);
+      document.getElementById('closeBudModal').addEventListener('click', closeModal);
+      document.getElementById('btnSaveBud').addEventListener('click', () => {
+        const name = document.getElementById('budNameInput').value.trim();
+        const planned = Number(document.getElementById('budPlanInput').value) || 0;
+        const type = document.getElementById('budTypeSelect').value;
+        const catId = document.getElementById('budCatSelect').value;
+        if (!name) { showToast('أدخل اسم البند', 'error'); return; }
+        if (existingBud) {
+          existingBud.name = name;
+          existingBud.planned = planned;
+          existingBud.type = type;
+          existingBud.catId = catId;
+          logActivity(`عدّل مخصص "${name}" إلى ${fmt(planned)} ج`);
+        } else {
+          month.budgets.push({ id: 'b_' + Date.now(), name, planned, type, catId });
+          logActivity(`أضاف بند ميزانية "${name}" بمبلغ ${fmt(planned)} ج`);
+        }
+        saveState();
+        closeModal();
+        renderAll();
+        showToast('تم تحديث تقسيم الميزانية');
+      });
+      if (existingBud) {
+        document.getElementById('btnDelBud').addEventListener('click', () => {
+          month.budgets = month.budgets.filter(x => x.id !== existingBud.id);
+          state.deletedIds.push(existingBud.id);
+          logActivity(`حذف بند الميزانية "${existingBud.name}"`);
+          saveState();
+          closeModal();
+          renderAll();
+          showToast('تم حذف البند');
+        });
+      }
+    }
+
+    // --- SWITCH USER MODAL (Enforces PIN 2006 / 2109) ---
+    function openSwitchUserModal() {
+      const uM = state.users.mahmoud;
+      const uN = state.users.nora;
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">تبديل الحساب النشط</h3>
+          <button type="button" id="closeUsrModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">اختر الحساب وأدخل الرقم السري الخاص به للتبديل بأمان.</p>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          ${[uM, uN].map(u => {
+            const active = state.activeUserId === u.id;
+            return `
+              <button type="button" data-pick-user="${u.id}" class="pick-user-btn p-4 rounded-2xl border-2 text-center transition ${active ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/40' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300'}">
+                <div class="w-12 h-12 rounded-full mx-auto flex items-center justify-center text-white text-lg font-extrabold" style="background:${u.color}">${escapeHtml(u.avatar)}</div>
+                <div class="mt-2 text-sm font-extrabold text-slate-800 dark:text-white">${escapeHtml(u.name)}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">${escapeHtml(u.role)} 🔒</div>
+                ${active ? `<span class="inline-block mt-1.5 text-[10px] font-bold bg-brand-600 text-white px-2 py-0.5 rounded-full">نشط حالياً</span>` : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div id="pinPromptWrap" class="hidden space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <label id="pinPromptLabel" class="block text-xs font-bold text-slate-700 dark:text-slate-300">أدخل الرقم السري (PIN)</label>
+          <div class="flex gap-2">
+            <input id="pinVerifyInput" type="password" inputmode="numeric" maxlength="4" class="flex-1 px-3 py-2 text-center text-base font-extrabold tracking-widest bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl" placeholder="••••" />
+            <button type="button" id="btnVerifyPin" class="px-4 py-2 rounded-xl bg-brand-700 text-white text-xs font-bold">دخول</button>
+          </div>
+        </div>
+      `);
+      document.getElementById('closeUsrModal').addEventListener('click', closeModal);
+      let pendingUserId = null;
+      document.querySelectorAll('.pick-user-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const uid = btn.dataset.pickUser;
+          const target = state.users[uid];
+          if (uid === state.activeUserId) { closeModal(); return; }
+          pendingUserId = uid;
+          document.getElementById('pinPromptLabel').textContent = `أدخل الرقم السري لحساب ${target.name}`;
+          document.getElementById('pinPromptWrap').classList.remove('hidden');
+          document.getElementById('pinVerifyInput').value = '';
+          document.getElementById('pinVerifyInput').focus();
+        });
+      });
+      document.getElementById('btnVerifyPin').addEventListener('click', () => {
+        if (!pendingUserId) return;
+        const target = state.users[pendingUserId];
+        const expected = target.pin || (pendingUserId === 'mahmoud' ? '2006' : '2109');
+        if (document.getElementById('pinVerifyInput').value.trim() === expected) {
+          state.activeUserId = pendingUserId;
+          try { localStorage.setItem(AUTH_KEY, JSON.stringify({ uid: pendingUserId, ts: Date.now() })); } catch (e) {}
+          saveState(true);
+          closeModal();
+          renderAll();
+          showToast(`تم التبديل إلى حساب ${target.name}`);
+        } else {
+          showToast('الرقم السري غير صحيح', 'error');
+        }
+      });
+    }
+
+    // --- DEBT MODAL ---
+    function openDebtModal() {
+      const rem = Math.max(0, (Number(state.debt.total) || 0) - (Number(state.debt.paid) || 0));
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">إدارة الديون والسداد</h3>
+          <button type="button" id="closeDebtModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900"><div class="text-[10px] text-slate-500">إجمالي الدين</div><div class="text-sm font-extrabold">${fmt(state.debt.total)}</div></div>
+          <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40"><div class="text-[10px] text-emerald-700 dark:text-emerald-300">المسدد</div><div class="text-sm font-extrabold text-emerald-700 dark:text-emerald-300">${fmt(state.debt.paid)}</div></div>
+          <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40"><div class="text-[10px] text-rose-700 dark:text-rose-300">المتبقي</div><div class="text-sm font-extrabold text-rose-700 dark:text-rose-300">${fmt(rem)}</div></div>
+        </div>
+        <div class="space-y-2.5 mb-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تسجيل دفعة سداد دين الآن (جنيه)</label>
+            <div class="flex gap-2">
+              <input id="debtPayInput" type="number" inputmode="decimal" placeholder="مثال: 500" class="flex-1 px-3 py-2 text-sm font-extrabold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              <button type="button" id="btnRecordDebtPay" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">سداد</button>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-100 dark:border-slate-700">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تعديل إجمالي الدين</label>
+            <div class="flex gap-2">
+              <input id="debtTotalInput" type="number" inputmode="decimal" value="${state.debt.total}" class="flex-1 px-3 py-2 text-sm font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              <button type="button" id="btnUpdateDebtTotal" class="px-4 py-2 rounded-xl bg-slate-800 dark:bg-brand-700 text-white text-xs font-bold">تحديث</button>
+            </div>
+          </div>
+        </div>
+      `);
+      document.getElementById('closeDebtModal').addEventListener('click', closeModal);
+      document.getElementById('btnRecordDebtPay').addEventListener('click', () => {
+        const pay = Number(document.getElementById('debtPayInput').value);
+        if (!pay || pay <= 0) { showToast('أدخل مبلغ السداد', 'error'); return; }
+        state.debt.paid = (Number(state.debt.paid) || 0) + pay;
+        state.debt.payments.unshift({ amount: pay, date: new Date().toISOString().slice(0, 10), userId: state.activeUserId });
+        logActivity(`سدد ${fmt(pay)} ج من الدين`);
+        saveState();
+        closeModal();
+        renderAll();
+        showToast(`تم تسجيل سداد ${fmt(pay)} ج`);
+      });
+      document.getElementById('btnUpdateDebtTotal').addEventListener('click', () => {
+        state.debt.total = Math.max(0, Number(document.getElementById('debtTotalInput').value) || 0);
+        logActivity(`عدّل إجمالي الدين إلى ${fmt(state.debt.total)} ج`);
+        saveState();
+        closeModal();
+        renderAll();
+        showToast('تم تحديث إجمالي الدين');
+      });
+    }
+
+    // --- ADD NEW MONTH MODAL ---
+    function openAddMonthModal() {
+      const arMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">فتح شهر ميزانية جديد</h3>
+          <button type="button" id="closeMonthModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الشهر</label>
+            <select id="newMonthNum" class="w-full px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
+              ${arMonths.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}" ${i === 11 ? 'selected' : ''}>${m}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">السنة</label>
+            <input id="newMonthYear" type="number" value="2026" class="w-full px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+          </div>
+        </div>
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 mb-4">
+          <input id="copyPrevPlan" type="checkbox" checked class="w-4 h-4 accent-brand-700" />
+          <span>نسخ مصادر الدخل وأقسام الميزانية من الشهر الحالي</span>
+        </label>
+        <button type="button" id="btnCreateMonth" class="w-full py-2.5 rounded-xl bg-brand-700 text-white text-xs font-extrabold">إنشاء الشهر</button>
+      `);
+      document.getElementById('closeMonthModal').addEventListener('click', closeModal);
+      document.getElementById('btnCreateMonth').addEventListener('click', () => {
+        const mNum = document.getElementById('newMonthNum').value;
+        const yr = document.getElementById('newMonthYear').value.trim() || '2026';
+        const key = `${yr}-${mNum}`;
+        if (state.months[key]) {
+          state.activeMonthKey = key;
+          closeModal();
+          renderAll();
+          showToast('هذا الشهر موجود بالفعل — تم فتحه');
+          return;
+        }
+        const label = `${arMonths[Number(mNum) - 1]} ${yr}`;
+        const cur = getCurrentMonth();
+        const copy = document.getElementById('copyPrevPlan').checked;
+        state.months[key] = {
+          key,
+          label,
+          incomes: copy ? cur.incomes.map((x, i) => ({ ...x, id: `inc_${key}_${i}` })) : [],
+          budgets: copy ? cur.budgets.map((x, i) => ({ ...x, id: `b_${key}_${i}` })) : createDefaultBudgetItems().budgets,
+          expenses: []
+        };
+        state.activeMonthKey = key;
+        logActivity(`أنشأ ميزانية شهر ${label}`);
+        saveState();
+        closeModal();
+        renderAll();
+        showToast(`تم إنشاء شهر ${label}`);
+      });
+    }
+
+    // --- IMPORT SYNC CODE MODAL ---
+    function openImportSyncModal() {
+      showModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">استيراد ودمج كود التحديث</h3>
+          <button type="button" id="closeImpModal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">الصق الكود الذي أرسله لك الطرف الآخر على واتساب ليتم دمج مصروفاته مع مصروفاتك.</p>
+        <textarea id="importCodeArea" rows="4" dir="ltr" class="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono mb-3" placeholder="الصق الكود هنا..."></textarea>
+        <button type="button" id="btnDoImport" class="w-full py-2.5 rounded-xl bg-brand-700 text-white text-xs font-extrabold">دمج وتحديث البيانات</button>
+      `);
+      document.getElementById('closeImpModal').addEventListener('click', closeModal);
+      document.getElementById('btnDoImport').addEventListener('click', () => {
+        try {
+          const raw = document.getElementById('importCodeArea').value.trim();
+          const parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+          if (!parsed || !parsed.months) throw new Error('invalid');
+          mergeRemoteState(parsed);
+          saveState();
+          closeModal();
+          renderAll();
+          showToast('تم دمج بيانات الطرفين بنجاح');
+        } catch (e) {
+          showToast('الكود غير صحيح — تأكد من نسخه بالكامل', 'error');
+        }
+      });
+    }
+
+    // --- CONFIRM MODAL ---
+    function openConfirmModal(message, onConfirm) {
+      showModal(`
+        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white mb-2">تأكيد</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mb-4">${escapeHtml(message)}</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="btnConfirmYes" class="py-2.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold">نعم، متأكد</button>
+          <button type="button" id="btnConfirmNo" class="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold">إلغاء</button>
+        </div>
+      `);
+      document.getElementById('btnConfirmYes').addEventListener('click', () => { closeModal(); onConfirm(); });
+      document.getElementById('btnConfirmNo').addEventListener('click', closeModal);
+    }
+
+    // =========================================================================
+    // 12. PWA MANIFEST INJECTION & GLOBAL EVENT BINDINGS
+    // =========================================================================
+    (function setupPwaManifest() {
+      try {
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="44" fill="#0f766e"/><text x="96" y="122" font-size="96" text-anchor="middle">🏠</text></svg>`;
+        const iconUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(iconSvg)));
+        const manifest = {
+          name: 'ميزانية بيتنا — محمود ونورا',
+          short_name: 'ميزانية بيتنا',
+          start_url: '.',
+          display: 'standalone',
+          background_color: '#f8fafc',
+          theme_color: '#0f766e',
+          dir: 'rtl',
+          lang: 'ar',
+          icons: [{ src: iconUrl, sizes: '192x192', type: 'image/svg+xml' }]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+      } catch (e) {}
+    })();
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window._deferredInstallPrompt = e;
+    });
+
+    // Login Screen Listeners
+    document.querySelectorAll('.login-user-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        loginSelectedUid = btn.dataset.loginUid;
+        loginPinBuffer = '';
+        document.getElementById('loginErrorMsg').textContent = '';
+        updateLoginUi();
+      });
+    });
+    document.querySelectorAll('.pin-key[data-key]').forEach(btn => {
+      btn.addEventListener('click', () => handleLoginDigit(btn.dataset.key));
+    });
+    document.getElementById('pinKeyClear').addEventListener('click', () => {
+      loginPinBuffer = '';
+      document.getElementById('loginErrorMsg').textContent = '';
+      updateLoginUi();
+    });
+    document.getElementById('pinKeyBack').addEventListener('click', () => {
+      loginPinBuffer = loginPinBuffer.slice(0, -1);
+      updateLoginUi();
+    });
+
+    // Keyboard support on login screen
+    document.addEventListener('keydown', (e) => {
+      if (isAuthenticated) return;
+      if (e.key >= '0' && e.key <= '9') handleLoginDigit(e.key);
+      else if (e.key === 'Backspace') { loginPinBuffer = loginPinBuffer.slice(0, -1); updateLoginUi(); }
+    });
+
+    // App Shell Global Listeners
+    document.getElementById('btnSwitchUser').addEventListener('click', openSwitchUserModal);
+    document.getElementById('btnLockApp').addEventListener('click', lockAndLogout);
+    document.getElementById('btnAddMonth').addEventListener('click', openAddMonthModal);
+    document.getElementById('btnOpenAddExpense').addEventListener('click', () => openExpenseModal());
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeTab = btn.dataset.tab;
+        renderAll();
+      });
+    });
+
+    // Boot Sequence: Always show Login Screen unless explicitly remembered
+    applyTheme();
+    (function bootApp() {
+      let remembered = null;
+      try {
+        const raw = localStorage.getItem(AUTH_KEY);
+        if (raw) remembered = JSON.parse(raw);
+      } catch (e) {}
+      if (remembered && remembered.uid && state.users[remembered.uid]) {
+        state.activeUserId = remembered.uid;
+        isAuthenticated = true;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appRoot').classList.remove('hidden');
+        renderAll();
+        if (state.sync && state.sync.firebaseUrl) {
+          pullFromFirebase(false);
+          startCloudAutoSync();
+        }
+      } else {
+        showLoginScreen(state.activeUserId);
+      }
+    })();
+  </script>
+</body>
+</html>
